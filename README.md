@@ -1,5 +1,7 @@
 # Noisy graph states
 
+[![Tests](https://github.com/jwallnoefer/noisy_graph_states/actions/workflows/ci.yaml/badge.svg)](https://github.com/jwallnoefer/noisy_graph_states/actions/workflows/ci.yaml)
+
 This python package is a tool to track how noisy graph
 states transform under operations and measurements
 (for an introduction to graph states see e.g.

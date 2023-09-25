@@ -1,0 +1,68 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+    tags:
+      - "*.*"
+      - "v*.*"
+  release:
+
+jobs:
+
+  pre-commit:
+    name: Check code quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+      - uses: pre-commit/action@v3.0.0
+
+  test_pipenv:
+    name: Run tests in development environment with pipenv
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+      - run: pip install pipenv
+      - run: pipenv sync --dev
+      - run: pipenv run pytest
+
+  check_install:
+    runs-on: ubuntu-latest
+    name: Check package installation via setup.py works
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+      - run: pip install --upgrade setuptools
+      - name: Build package
+        run: python setup.py sdist
+      - name: Install package
+        run: pip install dist/*
+
+  test_general:
+    needs: check_install
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.9', '3.10', '3.11']
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    name: Run Tests on ${{ matrix.os }} - Python ${{ matrix.python-version }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install --upgrade setuptools
+      - run: pip install -e ./[test]
+      - run: pytest
