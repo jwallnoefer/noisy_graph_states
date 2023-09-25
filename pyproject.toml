@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "noisy_graph_states"
+description="A tool to treat noise on graph states."
+readme = "README.md"
+authors = [
+  { name = "Julius Wallnöfer" }
+]
+license = {file = "LICENSE"}
+dependencies = [
+    "numpy>=1.24.3",
+    "graphepp>=0.4"
+]
+classifiers=[
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Intended Audience :: Science/Research",
+]
+keywords=[
+    "quantum information",
+    "quantum information theory",
+    "graph",
+    "graph state",
+    "stabilizer state",
+    "stabilizer formalism",
+    "entanglement",
+    "multipartite entanglement"
+]
+requires-python = ">=3.9"
+dynamic = ["version"]
+
+[project.urls]
+homepage = "https://github.com/jwallnoefer/noisy_graph_states"
+
+[project.optional-dependencies]
+test = ["pytest>=7.4.0"]
+docs = [
+    "Sphinx>=6.2.1",
+    "autodocsumm>=0.2.11",
+    "recommonmark>=0.7.1",
+    "sphinx-rtd-theme>=1.2.2"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+write_to = "src/noisy_graph_states/version.py"
+local_scheme = "no-local-version"

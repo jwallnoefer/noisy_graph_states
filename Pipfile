@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "*"
+graphepp = "*"
+
+[dev-packages]
+noisy_graph_states = {editable = true, path = "."}
+pytest = "*"
+pre-commit = "*"
+setuptools = "*"
+autodocsumm = "*"
+recommonmark = "*"
+sphinx-rtd-theme = "*"
+setuptools-scm = "*"
+
+[requires]
+python_version = "3.9"
