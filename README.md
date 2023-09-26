@@ -43,8 +43,9 @@ git clone https://github.com/jwallnoefer/noisy_graph_states.git
 cd noisy_graph_states
 git checkout main
 pipenv sync
-pipenv install graphepp
+pipenv install .
 ```
+Then you can activate the virtual environment with `pipenv shell`.
 
 ## Documentation
 
