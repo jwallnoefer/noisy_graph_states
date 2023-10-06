@@ -12,6 +12,11 @@ from functools import lru_cache, cached_property
 class Map(object):
     """A noise map using the NSF convention.
 
+    Can be used to represent Pauli-diagonal noise.
+    Y and X noise are represented as correlated Z noises,
+    which only makes sense in the context of graph states.
+
+
     Parameters
     ----------
     weights : list
@@ -48,6 +53,22 @@ class Map(object):
         return State(graph=other.graph, maps=other.maps + [self])
 
     def __eq__(self, other):
+        """Check if two maps are equal.
+
+        Since there are ambiguities in how the noises
+        can be specified, the standard form description
+        is used to decide equality. See the `to_standard_form`
+        method for a more detailed explanation.
+
+        Parameters
+        ----------
+        other : Map
+
+        Returns
+        -------
+        bool
+
+        """
         first = (
             self.as_standard_form()
         )  # not using to_standard_form to avoid side effects
@@ -136,7 +157,11 @@ class Map(object):
 
 @dataclass
 class State(object):
-    """A quantum state described with the NSF convention.
+    """A noisy graph state.
+
+    Represents a quantum state that is the
+    perfect graph state corresponding to `graph`
+    with the noise `maps` applied to it.
 
     Parameters
     ----------
@@ -156,6 +181,25 @@ class State(object):
     maps: list[Map]  # of maps
 
     def __eq__(self, other):
+        """States are equal if the graphs are equal and the maps are equivalent.
+
+        Do note that there is some ambiguity in the
+        representation of states in this description
+        when it comes to graphs that are essentially
+        the same in terms of entanglement but have
+        additional disconnected vertices. Furthermore,
+        it does not take into account other things like
+        the local Clifford equivalence of graph states
+        under local complementation.
+
+        Parameters
+        ----------
+        other : State
+
+        Returns
+        -------
+        bool
+        """
         if not isinstance(other, State):
             return NotImplemented
         return self.graph == other.graph and compile_maps(*self.maps) == compile_maps(
@@ -165,15 +209,25 @@ class State(object):
 
 @dataclass(frozen=True)
 class Strategy(object):
-    """A representation of a measurement strategy on a noise graph state.
+    """A representation of a measurement strategy on a noisy graph state.
+
+    This only supports transformations that consist solely of
+    measurements. (no merging/connecting operations)
+    One can use this class instead of individual functions to make use
+    of the built-in caching mechanisms - i.e. repeated applications
+    of the same strategy on different input states will be much faster.
 
     Parameters
     ----------
     graph : Graph
         The graph state at the beginning of the strategy.
     sequence : tuple[tuple[str, int]]
-        A measurement order corresponding to L-operators.
-        Individual instructions must be of form ("x" or "y" or "z", qubit_index)
+        A measurement order corresponding to combined operators, which both
+        project on an eigenstate and perform the local Cliffords that return
+        the state to a graph state.
+        Individual instructions must be of form ("x" or "y" or "z", qubit_index).
+        Optionally, x-measurements may specify the index of the special
+        neighbour b0 as a third entry in the tuple ("x", qubit_index, b0).
 
     Attributes
     ----------
@@ -305,14 +359,17 @@ class Strategy(object):
     def get_weight_vector_expression(self):
         """Get an expression describing how initial local Pauli noise transforms under the strategy.
 
-        This could be used to build a function that is equivalent to the strategy, but is more easily
+        This can be used to build an analytic expression that is equivalent to the strategy, but is more easily
         optimized.
 
         Returns
         -------
         dict:
-            with keys: final noise patterns
-            and values: which initial noises contribute to the noise pattern
+            keys : tuple[int]
+                final noise patterns
+            values: list[str]
+                which initial noises contribute to the noise pattern, in the format [xyz]_[0-9]+
+                example: ["x_0", "y_3", "y_13", "z_8"]
 
         """
         expression = defaultdict(list)
@@ -329,13 +386,6 @@ class Strategy(object):
         return expression
 
 
-# two possible ideas to represent noise channels
-# (a) a list of lists where [0, 1, 2] means Z_0Z_1Z_2
-# (b) a sequence of 0s and 1s where a 1 at the i-th index means a Z is active on
-#    that index
-
-
-# try (a) list of lists
 def add_or_remove(index_list, noise):
     """Add noise operators if they are not there. Remove the noise operators if they are there.
 
@@ -347,7 +397,7 @@ def add_or_remove(index_list, noise):
         Initial noise operators
     Returns
     -------
-    new_list : tuple
+    tuple
         Final noise operators
     """
     new_noise = list(noise)
@@ -710,7 +760,7 @@ def _x_neighbours_sequence(graph: gg.Graph, index: int, b0: int or None):
 
     Returns
     -------
-
+    list[tuple[int]]
     """
     if b0 is None:
         if gt.neighbourhood(graph, index=index):  # i.e. is not empty
@@ -887,18 +937,18 @@ def compile_maps(*args):
 
 
 def reduce_maps(state, target_indices):
-    """Compute the reduced noise maps of all the state considering certain qubits.
+    """Compute the reduced noise maps of all the state on a subset of qubits.
 
     Parameters
     ----------
     state : State
         The state on whose maps will be reduced.
-    target_indices : list
+    target_indices : list[int]
         Indices of the target qubits. Counting starts at 0.
 
     Returns
     -------
-    reduced_maps : list[Map]
+    list[Map]
         Reduced maps
     """
     maps = state.maps
@@ -916,21 +966,24 @@ def reduce_maps(state, target_indices):
 
 
 def apply_nsf_maps_to_dm(maps, density_matrix, target_indices):
-    """Compute the noise maps and apply then to the noiseless density matrix corresponding to a certain subset of qubits.
+    """Apply maps to a density matrix representing a subset of qubits.
 
     Parameters
     ----------
     maps : list[Map]
-        NSF noise maps.
-    density_matrix : ndarray
-        Noiseless density matrix of the target state.
+        All noise maps that should be applied.
+    density_matrix : np.ndarray
+        Input state to which the noise maps will be applied.
+        Must have shape (2**N, 2**N) with N=len(target_indices) and
+        the qubits are assumed to be in the same order as specified
+        in `target_indices`.
     target_indices : list
-        Indices of the target qubits. Counting starts at 0.
+        Indices of subset of qubits that is considered. Counting starts at 0.
 
     Returns
     -------
-    noisy_density_matrix : ndarray
-        Noisy density matrix of the target state.
+    np.ndarray
+        Density matrix after the application of the maps.
     """
     map = compile_maps(*maps)
     weights = [1 - np.sum(map.weights)] + map.weights
@@ -965,7 +1018,7 @@ def noisy_bp_dm(state, target_indices):
 
     Returns
     -------
-    noisy_density_matrix : ndarray
+    np.ndarray
         Noisy density matrix of the target Bell pair.
 
     Raises
@@ -1001,6 +1054,9 @@ def noisy_bp_dm(state, target_indices):
 def noisy_3_ghz_dm(state, target_root, target_leafs):
     """Compute the noisy density matrix of a targeted 3-qubit GHZ state.
 
+    This assumes the root-and-leafs representation of the graph state
+    variant of the GHZ state. (which is LC-equivalent to the fully connected graph)
+
     Parameters
     ----------
     state : State
@@ -1012,23 +1068,50 @@ def noisy_3_ghz_dm(state, target_root, target_leafs):
 
     Returns
     -------
-    noisy_3_ghz_dm : ndarray
+    np.ndarray
         Noisy density matrix of the target 3-qubit GHZ state.
+
+
+    Raises
+    ------
+    ValueError
+        If the state of the `target_root` and `target_leafs` cannot
+        represent a GHZ state.
+        This is the case if there are edges missing in the graph
+        or there are other extra connections to vertices outside
+        the subset.
+
     """
     target_indices = [target_leafs[0]] + [target_root] + [target_leafs[1]]
     target_edges = [
         sorted([target_root, target_leafs[0]]),
         sorted([target_root, target_leafs[1]]),
     ]
-    assert tuple(target_edges[0]) in state.graph.E
-    assert tuple(target_edges[1]) in state.graph.E
+    # check if graph is compatible with extracting a GHZ
+    if tuple(target_edges[0]) not in state.graph.E:
+        raise ValueError(
+            f"Incompatible graph {state.graph} does not contain an edge {target_edges[0]}."
+        )
+    if tuple(target_edges[1]) not in state.graph.E:
+        raise ValueError(
+            f"Incompatible graph {state.graph} does not contain an edge {target_edges[1]}."
+        )
     for edge in state.graph.E:
         if target_root in edge:
-            assert target_edges[0] == sorted(edge) or target_edges[1] == sorted(edge)
+            if not (target_edges[0] == sorted(edge) or target_edges[1] == sorted(edge)):
+                raise ValueError(
+                    f"Incompatible graph {state.graph} contains extraneous edge {edge}."
+                )
         if target_leafs[0] in edge:
-            assert target_edges[0] == sorted(edge)
+            if not target_edges[0] == sorted(edge):
+                raise ValueError(
+                    f"Incompatible graph {state.graph} contains extraneous edge {edge}."
+                )
         if target_leafs[1] in edge:
-            assert target_edges[1] == sorted(edge)
+            if not target_edges[1] == sorted(edge):
+                raise ValueError(
+                    f"Incompatible graph {state.graph} contains extraneous edge {edge}."
+                )
     reduced_maps = reduce_maps(state, target_indices)
     # Note that the order of the noiseless density matrix is leaf-root-leaf
     noisy_density_matrix = apply_nsf_maps_to_dm(

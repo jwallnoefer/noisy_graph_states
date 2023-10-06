@@ -1,5 +1,8 @@
 # Noisy graph states
 
+[![Documentation Status](https://readthedocs.org/projects/noisy-graph-states/badge/?version=latest)](https://noisy-graph-states.readthedocs.io/en/latest/?badge=latest)
+[![Tests](https://github.com/jwallnoefer/noisy_graph_states/actions/workflows/ci.yaml/badge.svg)](https://github.com/jwallnoefer/noisy_graph_states/actions/workflows/ci.yaml)
+
 This python package is a tool to track how noisy graph
 states transform under operations and measurements
 (for an introduction to graph states see e.g.
@@ -19,18 +22,35 @@ operations.
 
 ## Installation
 
-TODO: to be added once published
+You can install the package into your Python environment
+directly from GitHub:
+
+```
+pip install git+https://github.com/jwallnoefer/noisy_graph_states@main
+```
+(replace `main` with another branch or version tag to install
+a specific version). As with all Python packages this can
+possibly overwrite already installed package versions in your
+environment with its dependencies, so installing it in a
+dedicated virtual environment may be preferable.
 
 If you encounter any problems, you can try installing the
 exact versions of the dependencies of this package, which
 were used to develop it (specified in `Pipfile.lock`).
 This assume Python 3.9 and `pipenv` are available on your system.
-
+```
+git clone https://github.com/jwallnoefer/noisy_graph_states.git
+cd noisy_graph_states
+git checkout main
+pipenv sync
+pipenv install .
+```
+Then you can activate the virtual environment with `pipenv shell`.
 
 ## Documentation
 
-The documentation can be built from source with sphinx,
-but it is also hosted at [insert link]
+The documentation can be built from source with Sphinx,
+but it is also hosted at [https://noisy-graph-states.readthedocs.io](https://noisy-graph-states.readthedocs.io)
 
 ## Motivation
 
