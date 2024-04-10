@@ -2,6 +2,7 @@
 """
 A collection of useful functions to translate between measurement patterns and strategies.
 """
+
 import graphepp as gg
 from itertools import permutations
 from collections import defaultdict
