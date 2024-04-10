@@ -34,6 +34,7 @@ class State(object):
     density_matrix
 
     """
+
     graph: gg.Graph
     density_matrix: np.ndarray
 
