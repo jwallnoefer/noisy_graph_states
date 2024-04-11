@@ -4,9 +4,9 @@ from random import choices
 from itertools import permutations
 from collections import defaultdict
 import noisy_graph_states.libs.graph as gt
-from noisy_graph_states.libs.patterns import sequence_to_pattern
-from noisy_graph_states.libs.patterns import pattern_to_sequence
-from noisy_graph_states.libs.patterns import pattern_to_all_sequences
+from noisy_graph_states.tools.patterns import sequence_to_pattern
+from noisy_graph_states.tools.patterns import pattern_to_sequence
+from noisy_graph_states.tools.patterns import pattern_to_all_sequences
 
 
 def _order_to_pattern(sequence, graph):

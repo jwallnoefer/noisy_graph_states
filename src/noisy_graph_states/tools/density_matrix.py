@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-A collection of useful functions to work with density matrices with the same syntax as the noisy_graph_states.
+"""An equivalent implementation using density matrices
+
+It is a collection of functions that work with density matrices instead but
+use the same syntax as in the main package.
+Mostly useful for verification.
 """
 
 import numpy as np

@@ -8,7 +8,7 @@ import graphepp as gg
 from itertools import permutations
 from noisy_graph_states import State
 from noisy_graph_states import Strategy
-from noisy_graph_states.libs.patterns import pattern_to_sequence
+from noisy_graph_states.tools.patterns import pattern_to_sequence
 
 
 def side_to_side(N):

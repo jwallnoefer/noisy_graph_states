@@ -4,10 +4,9 @@ import noisy_graph_states
 import noisy_graph_states.libs.graph as gt
 import noisy_graph_states.libs.matrix as mat
 from noisy_graph_states import State as NSFState
-from noisy_graph_states.libs.graph import ghz_3_dm
-import noisy_graph_states.libs.density_matrix as dm
+import noisy_graph_states.tools.density_matrix as dm
 from noisy_graph_states.libs.graph import bell_pair_dm
-from noisy_graph_states.libs.density_matrix import State as DMState
+from noisy_graph_states.tools.density_matrix import State as DMState
 
 
 def test_x_noise():
