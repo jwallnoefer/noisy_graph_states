@@ -29,10 +29,10 @@ def sequence_to_pattern(sequence: list[tuple], graph: gg.Graph):
     There are multiple sequences that lead to the same
     pattern.
 
-    This is explained in the appendix of
-    > Mor-Ruiz, Maria Flors, Julius Wallnöfer, and Wolfgang Dür.
-    > "Imperfect quantum networks with tailored resource states."
-    > arXiv preprint arXiv:2403.19778 (2024).
+    | This is explained in the appendix of
+    | Maria Flors Mor-Ruiz, Julius Wallnöfer, and Wolfgang Dür.
+    | "Imperfect quantum networks with tailored resource states."
+    | arXiv preprint arXiv:2403.19778 (2024).
 
     Parameters
     ----------
