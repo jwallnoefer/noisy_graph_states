@@ -165,10 +165,10 @@ def pattern_to_all_sequences(pattern: list[str], graph: gg.Graph):
     Use `pattern_to_sequence` instead if you just need a single
     sequence as representation of the pattern.
 
-    This is explained in the appendix of
-    > Mor-Ruiz, Maria Flors, Julius Wallnöfer, and Wolfgang Dür.
-    > "Imperfect quantum networks with tailored resource states."
-    > arXiv preprint arXiv:2403.19778 (2024).
+    | This is explained in the appendix of
+    | Maria Flors Mor-Ruiz, Julius Wallnöfer, and Wolfgang Dür.
+    | "Imperfect quantum networks with tailored resource states."
+    | arXiv preprint arXiv:2403.19778 (2024).
 
     Parameters
     ----------

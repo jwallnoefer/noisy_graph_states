@@ -20,7 +20,7 @@ class State(object):
 
     Represents a quantum state in the density matrix
     formalism, where the `density_matrix` encloses all noises acting
-    on the state. The corresponding to `graph is also given.
+    on the state. The corresponding to `graph` is also given.
     This has the same syntax that the State in noisy_graph_states,
     but using the density matrix instead of the noise maps.
 
@@ -234,7 +234,7 @@ def y_measurement(state, index):
 
     Returns
     -------
-    State : density_matrix.State
+    state : density_matrix.State
         The state after the manipulation has been applied.
     """
     state = local_complementation(state, index)
