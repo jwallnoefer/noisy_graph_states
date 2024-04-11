@@ -122,7 +122,7 @@ def noise_global(rho, p):
 
 
 def CNOT(n, m, N):
-    """gives the N-qubit CNOT unitary with with the n-th qubit as source
+    """gives the N-qubit CNOT unitary with the n-th qubit as source
     and the m-th qubit as target
     """
     if n == m:
