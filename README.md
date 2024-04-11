@@ -92,3 +92,10 @@ However, note that this efficiency increase is not
 guaranteed in general, as with the general correlated
 noise, one inevitably needs to track exponentially many
 entries again.
+
+## Use of the code
+The noisy graph state package was used for these publications:
+
+> Imperfect quantum networks with tailored resource states <br>
+> M. F. Mor-Ruiz, J. Wallnöfer, W. Dür <br>
+> Preprint: [arXiv:2403.19778 [quant-ph]](https://doi.org/10.48550/arXiv.2403.19778)

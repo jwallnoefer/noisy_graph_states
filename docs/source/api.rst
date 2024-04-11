@@ -17,3 +17,4 @@ Other modules
    :maxdepth: 2
 
    libs
+   tools
