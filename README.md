@@ -2,6 +2,8 @@
 
 [![Documentation Status](https://readthedocs.org/projects/noisy-graph-states/badge/?version=latest)](https://noisy-graph-states.readthedocs.io/en/latest/?badge=latest)
 [![Tests](https://github.com/jwallnoefer/noisy_graph_states/actions/workflows/ci.yaml/badge.svg)](https://github.com/jwallnoefer/noisy_graph_states/actions/workflows/ci.yaml)
+[![DOI](https://zenodo.org/badge/696296923.svg)](https://zenodo.org/doi/10.5281/zenodo.10625616)
+
 
 This python package is a tool to track how noisy graph
 states transform under operations and measurements
