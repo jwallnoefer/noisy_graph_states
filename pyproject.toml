@@ -7,7 +7,8 @@ name = "noisy_graph_states"
 description="A tool to treat noise on graph states."
 readme = "README.md"
 authors = [
-  { name = "Julius Wallnöfer" }
+    { name = "Julius Wallnöfer" },
+    { name = "Maria Flors Mor-Ruiz" }
 ]
 license = {file = "LICENSE"}
 dependencies = [
