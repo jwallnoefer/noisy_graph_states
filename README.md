@@ -1,7 +1,10 @@
 # Noisy graph states
 
+[![PyPI](https://img.shields.io/pypi/v/noisy-graph-states)](https://pypi.org/project/noisy-graph-states/)
 [![Documentation Status](https://readthedocs.org/projects/noisy-graph-states/badge/?version=latest)](https://noisy-graph-states.readthedocs.io/en/latest/?badge=latest)
 [![Tests](https://github.com/jwallnoefer/noisy_graph_states/actions/workflows/ci.yaml/badge.svg)](https://github.com/jwallnoefer/noisy_graph_states/actions/workflows/ci.yaml)
+[![DOI](https://zenodo.org/badge/696296923.svg)](https://zenodo.org/doi/10.5281/zenodo.10625616)
+
 
 This python package is a tool to track how noisy graph
 states transform under operations and measurements
@@ -23,13 +26,12 @@ operations.
 ## Installation
 
 You can install the package into your Python environment
-directly from GitHub:
+from the Python Package Index:
 
 ```
-pip install git+https://github.com/jwallnoefer/noisy_graph_states@main
+pip install noisy-graph-states
 ```
-(replace `main` with another branch or version tag to install
-a specific version). As with all Python packages this can
+As with all Python packages this can
 possibly overwrite already installed package versions in your
 environment with its dependencies, so installing it in a
 dedicated virtual environment may be preferable.
