@@ -1,3 +1,4 @@
+import pickle
 from collections import defaultdict
 import numpy as np
 import graphepp as gg
@@ -6,6 +7,10 @@ from dataclasses import dataclass
 import noisy_graph_states.libs.matrix as mat
 from copy import deepcopy
 from functools import lru_cache, cached_property
+import hashlib
+import os
+
+DEFAULT_CACHE_DIR = os.path.join(".cache", "noisy_graph_states")
 
 
 @dataclass
@@ -207,7 +212,7 @@ class State(object):
         )
 
 
-@dataclass(frozen=True)
+@dataclass(init=False, unsafe_hash=True)
 class Strategy(object):
     """A representation of a measurement strategy on a noisy graph state.
 
@@ -239,8 +244,36 @@ class Strategy(object):
     graph: gg.Graph
     sequence: tuple[tuple[str, int]]
 
+    def __init__(
+        self,
+        graph: gg.Graph,
+        sequence: tuple[tuple[str, int]],
+        autoload: bool = True,
+        autosave: bool = False,
+    ):
+        self._graph = graph
+        self._sequence = sequence
+        self._loaded_graph_sequence = None
+        self._transform_noise_cache = {}
+        if autoload:
+            try:
+                self.load()
+            except FileNotFoundError:
+                pass
+        self._autosave = autosave
+
+    @property
+    def graph(self):
+        return self._graph
+
+    @property
+    def sequence(self):
+        return self._sequence
+
     @cached_property
     def _graph_sequence(self):
+        if self._loaded_graph_sequence is not None:
+            return self._loaded_graph_sequence
         current_graph = self.graph
         graph_sequence = [current_graph]
         for instruction in self.sequence:
@@ -310,8 +343,10 @@ class Strategy(object):
             self._transform_noise(noise=y_pattern)
             self._transform_noise(noise=x_pattern)
 
-    @lru_cache(maxsize=None)
     def _transform_noise(self, noise: tuple[int]):
+        cached_value = self._transform_noise_cache.get(noise, None)
+        if cached_value is not None:
+            return cached_value
         current_noise = noise
         for instruction, current_graph in zip(self.sequence, self._graph_sequence):
             instruction_type = instruction[0]
@@ -350,7 +385,9 @@ class Strategy(object):
                 raise ValueError(
                     f"{instruction[0]} is not an accepted measurement type."
                 )
-        return tuple(sorted(current_noise))
+        transformed_noise = tuple(sorted(current_noise))
+        self._transform_noise_cache[noise] = transformed_noise
+        return transformed_noise
 
     def _transform_map(self, noise_map: Map):
         new_noises = [self._transform_noise(noise) for noise in noise_map.noises]
@@ -384,6 +421,32 @@ class Strategy(object):
             z_outcome = self._transform_noise(noise=z_pattern)
             expression[z_outcome] += [f"z_{qubit_index}"]
         return expression
+
+    def save(self, path: [str, None] = None):
+        if path is None:
+            path = os.path.join(
+                DEFAULT_CACHE_DIR,
+                hashlib.sha256(repr(self).encode("utf-8")).hexdigest() + ".pickle",
+            )
+        if not os.path.exists(DEFAULT_CACHE_DIR):
+            os.makedirs(DEFAULT_CACHE_DIR)
+        to_save = {
+            "_graph_sequence": self._graph_sequence,
+            "_transform_noise_cache": self._transform_noise_cache,
+        }
+        with open(path, "wb") as f:
+            pickle.dump(to_save, f)
+
+    def load(self, path: [str, None] = None):
+        if path is None:
+            path = os.path.join(
+                DEFAULT_CACHE_DIR,
+                hashlib.sha256(repr(self).encode("utf-8")).hexdigest() + ".pickle",
+            )
+        with open(path, "rb") as f:
+            loaded = pickle.load(f)
+        self._loaded_graph_sequence = loaded["_graph_sequence"]
+        self._transform_noise_cache = loaded["_transform_noise_cache"]
 
 
 def add_or_remove(index_list, noise):
