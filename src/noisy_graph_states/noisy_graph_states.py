@@ -431,7 +431,7 @@ class Strategy(object):
         if not os.path.exists(DEFAULT_CACHE_DIR):
             os.makedirs(DEFAULT_CACHE_DIR)
         to_save = {
-            "_graph_sequence": [(g.N, g.E) for g in self._graph_sequence],
+            "_graph_sequence": [(g.N, g.E, g.sets) for g in self._graph_sequence],
             "_transform_noise_cache": self._transform_noise_cache,
         }
         with open(path, "wb") as f:
