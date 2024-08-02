@@ -898,8 +898,6 @@ def cnot(state, source, target):
         The `source`-th vertex is considered. Counting starts at 0.
     target : int
         The `target`-th vertex is considered. Counting starts at 0.
-
-    Returns
     -------
     State
         The state after the manipulation has been applied.
