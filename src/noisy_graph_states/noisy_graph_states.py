@@ -247,7 +247,7 @@ class Strategy(object):
     def __init__(
         self,
         graph: gg.Graph,
-        sequence: tuple[tuple[str, int]],
+        sequence: tuple,
         autoload: bool = True,
         autosave: bool = False,
     ):
