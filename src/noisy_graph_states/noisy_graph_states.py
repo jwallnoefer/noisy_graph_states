@@ -32,7 +32,7 @@ class Map(object):
     """
 
     weights: list
-    noises: list[tuple[int]]
+    noises: list
 
     def __call__(self, other):
         """Apply the Map to a State object.
@@ -178,7 +178,7 @@ class State(object):
     """
 
     graph: gg.Graph
-    maps: list[Map]  # of maps
+    maps: list  # of maps
 
     def __eq__(self, other):
         """States are equal if the graphs are equal and the maps are equivalent.
@@ -237,7 +237,7 @@ class Strategy(object):
     """
 
     graph: gg.Graph
-    sequence: tuple[tuple[str, int]]
+    sequence: tuple
 
     @cached_property
     def _graph_sequence(self):
@@ -311,7 +311,7 @@ class Strategy(object):
             self._transform_noise(noise=x_pattern)
 
     @lru_cache(maxsize=None)
-    def _transform_noise(self, noise: tuple[int]):
+    def _transform_noise(self, noise: tuple):
         current_noise = noise
         for instruction, current_graph in zip(self.sequence, self._graph_sequence):
             instruction_type = instruction[0]
@@ -602,7 +602,7 @@ def local_complementation(state, index):
     return State(graph=new_graph, maps=new_maps)
 
 
-def _z_measure_noise(noise: tuple[int], index: int):
+def _z_measure_noise(noise: tuple, index: int):
     """Update the noise pattern under a Pauli-Z measurement.
 
     Parameters
@@ -650,7 +650,7 @@ def z_measurement(state, index):
     return State(graph=new_graph, maps=new_maps)
 
 
-def _y_measure_noise(noise: tuple[int], index: int, neighbours: tuple[int]):
+def _y_measure_noise(noise: tuple, index: int, neighbours: tuple):
     """Update the noise pattern under a Pauli-Y measurement.
 
     Parameters
@@ -700,10 +700,10 @@ def y_measurement(state, index):
 
 
 def _x_measure_noise(
-    noise: tuple[int],
+    noise: tuple,
     index: int,
     b0: int or None,
-    neighbours_sequence: list[tuple[int]],
+    neighbours_sequence: list,
 ):
     """Update the noise pattern under a Pauli-X measurement.
 

@@ -19,7 +19,7 @@ def _default_projector_matching():
     return {"x": "x", "y": "y", "z": "z"}
 
 
-def sequence_to_pattern(sequence: list[tuple], graph: gg.Graph):
+def sequence_to_pattern(sequence: list, graph: gg.Graph):
     """Find measurement pattern corresponding to graph measurements.
 
     Every sequence of measurements in the graph state picture (i.e.,
@@ -89,7 +89,7 @@ def sequence_to_pattern(sequence: list[tuple], graph: gg.Graph):
     return pattern
 
 
-def pattern_to_sequence(pattern: list[str], graph: gg.Graph):
+def pattern_to_sequence(pattern: list, graph: gg.Graph):
     """Find a sequence of graph measurements corresponding to a measurement pattern.
 
     Since multiple sequences can lead to the same pattern, this
@@ -156,7 +156,7 @@ def pattern_to_sequence(pattern: list[str], graph: gg.Graph):
     return tuple(sequence)
 
 
-def pattern_to_all_sequences(pattern: list[str], graph: gg.Graph):
+def pattern_to_all_sequences(pattern: list, graph: gg.Graph):
     """Find a sequence of graph measurements corresponding to a measurement pattern.
 
     Multiple sequences can lead to the same pattern, this function

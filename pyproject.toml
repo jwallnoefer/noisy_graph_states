@@ -31,7 +31,7 @@ keywords=[
     "entanglement",
     "multipartite entanglement"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 dynamic = ["version"]
 
 [project.urls]
