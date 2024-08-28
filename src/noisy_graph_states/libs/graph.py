@@ -11,6 +11,7 @@ import graphepp as gg
 from . import matrix as mat
 from cmath import sqrt
 from .. import noisy_graph_states as nsf
+import networkx as nx
 
 
 def graph_state(graph):
@@ -103,7 +104,7 @@ def measure_z(graph: gg.Graph, index: int):
 
 
 def measure_y(graph: gg.Graph, index: int):
-    graph = gg.local_complementation(n=index, graph=graph)
+    graph = local_complementation(n=index, graph=graph)
     graph = measure_z(graph=graph, index=index)
     return graph
 
@@ -122,11 +123,11 @@ def measure_x(graph: gg.Graph, index: int, b0: int or None = None):
                 f"{b0=} is not in the neighbourhood of qubit {index} in graph {graph}."
             )
     if b0 is not None:
-        graph = gg.local_complementation(n=b0, graph=graph)
-    graph = gg.local_complementation(n=index, graph=graph)
+        graph = local_complementation(n=b0, graph=graph)
+    graph = local_complementation(n=index, graph=graph)
     graph = measure_z(graph=graph, index=index)
     if b0 is not None:
-        graph = gg.local_complementation(n=b0, graph=graph)
+        graph = local_complementation(n=b0, graph=graph)
     return graph
 
 
@@ -291,3 +292,15 @@ def random_graph(num_vertices, p=0.5):
             if np.random.random() < p:
                 edges += [(i, j)]
     return gg.Graph(N=num_vertices, E=edges)
+
+
+def _local_complementation_networkx(graph: nx.Graph, vertex):
+    neighbours_complete_graph = nx.create_empty_copy(graph)
+    neighbours_complete_graph.update(nx.complete_graph(graph.neighbors(vertex)))
+    return nx.symmetric_difference(graph, neighbours_complete_graph)
+
+
+def local_complementation(n, graph: gg.Graph):
+    nx_graph = nx.Graph(graph.adj)
+    new_graph = _local_complementation_networkx(nx_graph, vertex=n)
+    return gg.Graph(len(new_graph.nodes), new_graph.edges)

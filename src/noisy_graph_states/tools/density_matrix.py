@@ -183,7 +183,7 @@ def local_complementation(state, index):
     complement_op = gt.complement_op(graph, index)
     new_density_matrix = complement_op @ density_matrix @ mat.H(complement_op)
     # Update the graph
-    new_graph = gg.local_complementation(index, graph)
+    new_graph = gt.local_complementation(index, graph)
     return State(new_graph, new_density_matrix)
 
 

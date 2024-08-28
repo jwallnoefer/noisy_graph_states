@@ -658,7 +658,7 @@ def local_complementation(state, index):
     State
         The state after the manipulation has been applied.
     """
-    new_graph = gg.local_complementation(n=index, graph=state.graph)
+    new_graph = gt.local_complementation(n=index, graph=state.graph)
     neighbours = gt.neighbourhood(state.graph, index)
     new_maps = [
         _complement_map(noise_map, index=index, neighbours=neighbours)
@@ -839,13 +839,13 @@ def _x_neighbours_sequence(graph: gg.Graph, index: int, b0: int or None):
     neighbour_sequence = []
     if b0 is not None:
         neighbour_sequence += [gt.neighbourhood(graph=graph, index=b0)]
-        graph = gg.local_complementation(n=b0, graph=graph)
+        graph = gt.local_complementation(n=b0, graph=graph)
     neighbour_sequence += [gt.neighbourhood(graph=graph, index=index)]
-    graph = gg.local_complementation(n=index, graph=graph)
+    graph = gt.local_complementation(n=index, graph=graph)
     graph = gt.measure_z(graph=graph, index=index)
     if b0 is not None:
         neighbour_sequence += [gt.neighbourhood(graph=graph, index=b0)]
-        # graph = gg.local_complementation(n=b0, graph=graph)
+        # graph = gt.local_complementation(n=b0, graph=graph)
     return neighbour_sequence
 
 
@@ -900,6 +900,8 @@ def cnot(state, source, target):
         The `source`-th vertex is considered. Counting starts at 0.
     target : int
         The `target`-th vertex is considered. Counting starts at 0.
+
+    Returns
     -------
     State
         The state after the manipulation has been applied.
