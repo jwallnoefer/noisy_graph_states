@@ -3,7 +3,7 @@
 A collection of useful functions to translate between measurement patterns and strategies.
 """
 
-import graphepp as gg
+import networkx as nx
 from itertools import permutations
 from collections import defaultdict
 import noisy_graph_states.libs.graph as gt
@@ -19,7 +19,7 @@ def _default_projector_matching():
     return {"x": "x", "y": "y", "z": "z"}
 
 
-def sequence_to_pattern(sequence: list, graph: gg.Graph):
+def sequence_to_pattern(sequence: list, graph: nx.Graph):
     """Find measurement pattern corresponding to graph measurements.
 
     Every sequence of measurements in the graph state picture (i.e.,
@@ -41,7 +41,7 @@ def sequence_to_pattern(sequence: list, graph: gg.Graph):
         Format: ("x" or "y" or "z", qubit_index) for x measurements
         optionally one can specify the index of the special neighbour
         like so ("x", qubit_index, b0).
-    graph : gg.Graph
+    graph : nx.Graph
         The start graph to which the sequence of measurements is applied.
 
 
@@ -53,7 +53,7 @@ def sequence_to_pattern(sequence: list, graph: gg.Graph):
         "x", "y" or "z" for a Pauli measurement. "." for no measurement.
     """
     matchings = defaultdict(_default_projector_matching)
-    pattern = ["."] * graph.N
+    pattern = ["."] * len(graph)
     for instruction in sequence:
         instruction_type = instruction[0]
         qubit_index = instruction[1]
@@ -89,7 +89,7 @@ def sequence_to_pattern(sequence: list, graph: gg.Graph):
     return pattern
 
 
-def pattern_to_sequence(pattern: list, graph: gg.Graph):
+def pattern_to_sequence(pattern: list, graph: nx.Graph):
     """Find a sequence of graph measurements corresponding to a measurement pattern.
 
     Since multiple sequences can lead to the same pattern, this
@@ -108,8 +108,8 @@ def pattern_to_sequence(pattern: list, graph: gg.Graph):
     pattern : list[str]
         The measurement pattern from the lowest qubit index to the highest qubit index.
         "x", "y" or "z" for a Pauli measurement. "." for no measurement.
-        length must match `graph.N`
-    graph : gg.Graph
+        length must match `len(graph)`
+    graph : nx.Graph
         The start graph to which the measurements are applied.
 
     Returns
@@ -118,7 +118,7 @@ def pattern_to_sequence(pattern: list, graph: gg.Graph):
         A sequence of graph measurements.
         Format: ("x" or "y" or "z", qubit_index)
     """
-    assert len(pattern) == graph.N
+    assert len(pattern) == len(graph)
     matchings = defaultdict(_default_projector_matching)
     sequence = []
     for qubit_index, proj in enumerate(pattern):
@@ -156,7 +156,7 @@ def pattern_to_sequence(pattern: list, graph: gg.Graph):
     return tuple(sequence)
 
 
-def pattern_to_all_sequences(pattern: list, graph: gg.Graph):
+def pattern_to_all_sequences(pattern: list, graph: nx.Graph):
     """Find a sequence of graph measurements corresponding to a measurement pattern.
 
     Multiple sequences can lead to the same pattern, this function
@@ -175,8 +175,8 @@ def pattern_to_all_sequences(pattern: list, graph: gg.Graph):
     pattern : list[str]
         The measurement pattern from the lowest qubit index to the highest qubit index.
         "x", "y" or "z" for a Pauli measurement. "." for no measurement.
-        length must match `graph.N`
-    graph : gg.Graph
+        length must match `len(graph)`
+    graph : nx.Graph
         The start graph to which the measurements are applied.
 
     Returns
@@ -185,7 +185,7 @@ def pattern_to_all_sequences(pattern: list, graph: gg.Graph):
         A sequence of graph measurements.
         Format: ("x" or "y" or "z", qubit_index)
     """
-    assert len(pattern) == graph.N
+    assert len(pattern) == len(graph)
     relevant_measurements = [
         (idx, proj) for idx, proj in enumerate(pattern) if proj != "."
     ]

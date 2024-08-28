@@ -1,4 +1,4 @@
-import graphepp as gg
+import networkx as nx
 import numpy as np
 import pytest
 
@@ -238,7 +238,7 @@ def test_map_equality():
 
 def test_state_equality():
     # different sets of maps could still lead to the same state, which should be accounted for
-    test_graph = gg.Graph(4, [(0, 1), (0, 2), (0, 3)])  # 4-qubit GHZ graph
+    test_graph = nx.Graph([(0, 1), (0, 2), (0, 3)])  # 4-qubit GHZ graph
     epsilon = 1e-4
     equivalent_F = (1 - epsilon) ** 3 + epsilon**3
     wnoise0_map = Map(
@@ -260,9 +260,8 @@ def test_state_equality():
     individual_state = individual_state
     assert wnoise_state != individual_state
     # different graphs should lead to unequal, even if the physical meaning is similar
-    other_test_graph = gg.Graph(
-        5, [(0, 1), (0, 2), (0, 3)]
-    )  # adds one disconnected qubit
+    other_test_graph = nx.Graph([(0, 1), (0, 2), (0, 3)])
+    other_test_graph.add_node(4)  # adds one disconnected qubit
     wnoise0_map = Map(
         [epsilon] * 3, [[1, 2, 3], [0, 1, 2, 3], [0]]
     )  # white noise on qubit 0
@@ -339,7 +338,7 @@ def test_compile_maps():
 
 
 def test_x_noise():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (1, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (1, 3)])
     start_state = NSFState(start_graph, [])
     final_state = noisy_graph_states.x_noise(start_state, [1], 1)
     target_maps = [Map(weights=[1], noises=[[0, 2, 3]])]
@@ -348,7 +347,7 @@ def test_x_noise():
 
 
 def test_y_noise():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (1, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (1, 3)])
     start_state = NSFState(start_graph, [])
     final_state = noisy_graph_states.y_noise(start_state, [1], 1)
     target_maps = [Map(weights=[1], noises=[[0, 1, 2, 3]])]
@@ -357,7 +356,7 @@ def test_y_noise():
 
 
 def test_z_noise():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (1, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (1, 3)])
     start_state = NSFState(start_graph, [])
     final_state = noisy_graph_states.z_noise(start_state, [1], 1)
     target_maps = [Map(weights=[1], noises=[[1]])]
@@ -366,7 +365,7 @@ def test_z_noise():
 
 
 def test_pauli_noise():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (1, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (1, 3)])
     start_state = NSFState(start_graph, [])
     final_state = noisy_graph_states.pauli_noise(
         start_state, [1], (0, 1 / 3, 1 / 2, 1 / 6)
@@ -379,7 +378,7 @@ def test_pauli_noise():
 
 
 def test_local_complementation():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (1, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (1, 3)])
     start_state = NSFState(start_graph, [])
     start_state_x = noisy_graph_states.x_noise(start_state, [1], 1)
     start_state_y = noisy_graph_states.y_noise(start_state, [1], 1)
@@ -387,7 +386,7 @@ def test_local_complementation():
     final_state_x = noisy_graph_states.local_complementation(start_state_x, 1)
     final_state_y = noisy_graph_states.local_complementation(start_state_y, 1)
     final_state_z = noisy_graph_states.local_complementation(start_state_z, 1)
-    target_graph = gg.Graph(4, [(0, 1), (1, 2), (1, 3), (0, 2), (0, 3), (2, 3)])
+    target_graph = nx.Graph([(0, 1), (1, 2), (1, 3), (0, 2), (0, 3), (2, 3)])
     target_state = NSFState(target_graph, [])
     target_state_x = noisy_graph_states.z_noise(target_state, [0, 2, 3], 1)
     target_state_y = noisy_graph_states.z_noise(target_state, [1], 1)
@@ -398,7 +397,7 @@ def test_local_complementation():
 
 
 def test_z_measurement():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (1, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (1, 3)])
     start_state = NSFState(start_graph, [])
     start_state_x = noisy_graph_states.x_noise(start_state, [1], 1)
     start_state_y = noisy_graph_states.y_noise(start_state, [1], 1)
@@ -406,7 +405,7 @@ def test_z_measurement():
     final_state_x = noisy_graph_states.z_measurement(start_state_x, 1)
     final_state_y = noisy_graph_states.z_measurement(start_state_y, 1)
     final_state_z = noisy_graph_states.z_measurement(start_state_z, 1)
-    target_graph = gg.Graph(4, [])
+    target_graph = nx.create_empty_copy(start_graph)
     target_state = NSFState(target_graph, [])
     target_state_x = noisy_graph_states.z_noise(target_state, [0, 2, 3], 1)
     target_state_y = noisy_graph_states.z_noise(target_state, [0, 2, 3], 1)
@@ -417,7 +416,7 @@ def test_z_measurement():
 
 
 def test_y_measurement():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (1, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (1, 3)])
     start_state = NSFState(start_graph, [])
     start_state_x = noisy_graph_states.x_noise(start_state, [1], 1)
     start_state_y = noisy_graph_states.y_noise(start_state, [1], 1)
@@ -425,7 +424,8 @@ def test_y_measurement():
     final_state_x = noisy_graph_states.y_measurement(start_state_x, 1)
     final_state_y = noisy_graph_states.y_measurement(start_state_y, 1)
     final_state_z = noisy_graph_states.y_measurement(start_state_z, 1)
-    target_graph = gg.Graph(4, [(0, 2), (2, 3), (0, 3)])
+    target_graph = nx.create_empty_copy(start_graph)
+    target_graph.add_edges_from([(0, 2), (2, 3), (0, 3)])
     target_state = NSFState(target_graph, [])
     target_state_x = noisy_graph_states.z_noise(target_state, [0, 2, 3], 1)
     target_state_y = noisy_graph_states.z_noise(target_state, [], 1)
@@ -436,7 +436,7 @@ def test_y_measurement():
 
 
 def test_x_measurement():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (1, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (1, 3)])
     start_state = NSFState(start_graph, [])
     start_state_x = noisy_graph_states.x_noise(start_state, [1], 1)
     start_state_y = noisy_graph_states.y_noise(start_state, [1], 1)
@@ -444,7 +444,8 @@ def test_x_measurement():
     final_state_x = noisy_graph_states.x_measurement(start_state_x, 1)
     final_state_y = noisy_graph_states.x_measurement(start_state_y, 1)
     final_state_z = noisy_graph_states.x_measurement(start_state_z, 1)
-    target_graph = gg.Graph(4, [(0, 2), (0, 3)])
+    target_graph = nx.create_empty_copy(start_graph)
+    target_graph.add_edges_from([(0, 2), (0, 3)])
     target_state = NSFState(target_graph, [])
     target_state_x = noisy_graph_states.z_noise(target_state, [], 1)
     target_state_y = noisy_graph_states.z_noise(target_state, [0], 1)
@@ -455,7 +456,7 @@ def test_x_measurement():
 
 
 def test_cnot():
-    start_graph = gg.Graph(5, [(0, 1), (1, 2), (3, 4)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (3, 4)])
     start_state = NSFState(start_graph, [])
     start_state_x = noisy_graph_states.x_noise(start_state, [3], 1)
     start_state_y = noisy_graph_states.y_noise(start_state, [3], 1)
@@ -463,7 +464,8 @@ def test_cnot():
     final_state_x = noisy_graph_states.cnot(start_state_x, source=1, target=3)
     final_state_y = noisy_graph_states.cnot(start_state_y, source=1, target=3)
     final_state_z = noisy_graph_states.cnot(start_state_z, source=1, target=3)
-    target_graph = gg.Graph(5, [(0, 1), (1, 2), (3, 4), (1, 4)])
+    target_graph = nx.create_empty_copy(start_graph)
+    target_graph.add_edges_from([(0, 1), (1, 2), (3, 4), (1, 4)])
     target_state = NSFState(target_graph, [])
     target_state_x = noisy_graph_states.z_noise(target_state, [4], 1)
     target_state_y = noisy_graph_states.z_noise(target_state, [1, 3, 4], 1)
@@ -474,7 +476,7 @@ def test_cnot():
 
 
 def test_merge():
-    start_graph = gg.Graph(5, [(0, 1), (1, 2), (3, 4)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (3, 4)])
     start_state = NSFState(start_graph, [])
     start_state_x = noisy_graph_states.x_noise(start_state, [3], 1)
     start_state_y = noisy_graph_states.y_noise(start_state, [3], 1)
@@ -482,7 +484,8 @@ def test_merge():
     final_state_x = noisy_graph_states.merge(start_state_x, source=1, target=3)
     final_state_y = noisy_graph_states.merge(start_state_y, source=1, target=3)
     final_state_z = noisy_graph_states.merge(start_state_z, source=1, target=3)
-    target_graph = gg.Graph(5, [(0, 1), (1, 2), (1, 4)])
+    target_graph = nx.create_empty_copy(start_graph)
+    target_graph.add_edges_from([(0, 1), (1, 2), (1, 4)])
     target_state = NSFState(target_graph, [])
     target_state_x = noisy_graph_states.z_noise(target_state, [4], 1)
     target_state_y = noisy_graph_states.z_noise(target_state, [1, 4], 1)
@@ -493,7 +496,7 @@ def test_merge():
 
 
 def test_full_merge():
-    start_graph = gg.Graph(5, [(0, 1), (1, 2), (3, 4)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (3, 4)])
     start_state = NSFState(start_graph, [])
     start_state_x = noisy_graph_states.x_noise(start_state, [3], 1)
     start_state_y = noisy_graph_states.y_noise(start_state, [3], 1)
@@ -501,7 +504,8 @@ def test_full_merge():
     final_state_x = noisy_graph_states.full_merge(start_state_x, source=1, target=3)
     final_state_y = noisy_graph_states.full_merge(start_state_y, source=1, target=3)
     final_state_z = noisy_graph_states.full_merge(start_state_z, source=1, target=3)
-    target_graph = gg.Graph(5, [(0, 2), (0, 4), (2, 4)])
+    target_graph = nx.create_empty_copy(start_graph)
+    target_graph.add_edges_from([(0, 2), (0, 4), (2, 4)])
     target_state = NSFState(target_graph, [])
     target_state_x = noisy_graph_states.z_noise(target_state, [4], 1)
     target_state_y = noisy_graph_states.z_noise(target_state, [0, 2], 1)
@@ -512,7 +516,7 @@ def test_full_merge():
 
 
 def test_reduce_maps():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (2, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (2, 3)])
     start_state = NSFState(start_graph, [])
     p = 0.75
     depolarizing_weights = [(1 + 3 * p) / 4, (1 - p) / 4, (1 - p) / 4, (1 - p) / 4]
@@ -533,7 +537,7 @@ def test_reduce_maps():
     example_map = noisy_graph_states.Map(
         weights=[0.0025, 0.0025, 0.0025], noises=[(1, 10), (0, 1, 10), (0,)]
     )
-    example_state = NSFState(gg.Graph(N=100, E=()), maps=[example_map])
+    example_state = NSFState(nx.empty_graph(100), maps=[example_map])
     reduced_map = noisy_graph_states.reduce_maps(
         example_state, target_indices=[12, 67]
     )[0]
@@ -542,7 +546,7 @@ def test_reduce_maps():
 
     # just to make sure, another example with explicitly cutting a Bell pair out of a bigger 1d cluster
     N = 8
-    start_graph = gg.Graph(N, E=[(i, i + 1) for i in range(N - 1)])
+    start_graph = nx.Graph([(i, i + 1) for i in range(N - 1)])
     start_state = NSFState(start_graph, [])
     p = 0.75
     depolarizing_weights = [(1 + 3 * p) / 4, (1 - p) / 4, (1 - p) / 4, (1 - p) / 4]
@@ -565,7 +569,7 @@ def test_reduce_maps():
 
 def test_apply_nsf_maps_to_dm():
     density_matrix = bell_pair_dm
-    start_graph = gg.Graph(2, [(0, 1)])
+    start_graph = nx.Graph([(0, 1)])
     start_state = NSFState(start_graph, [])
     start_state = noisy_graph_states.x_noise(start_state, [0], 1)
     final_density_matrix = noisy_graph_states.apply_nsf_maps_to_dm(
@@ -577,7 +581,7 @@ def test_apply_nsf_maps_to_dm():
 
 
 def test_noisy_bp_dm():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (2, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (2, 3)])
     start_state = NSFState(start_graph, [])
     p = 0.75
     depolarizing_weights = [(1 + 3 * p) / 4, (1 - p) / 4, (1 - p) / 4, (1 - p) / 4]
@@ -597,7 +601,7 @@ def test_noisy_bp_dm():
 
 
 def test_invalid_bp_dm():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (2, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (2, 3)])
     start_state = NSFState(start_graph, [])
     p = 0.99
     depolarizing_weights = [(1 + 3 * p) / 4, (1 - p) / 4, (1 - p) / 4, (1 - p) / 4]
@@ -608,7 +612,8 @@ def test_invalid_bp_dm():
         noisy_graph_states.noisy_bp_dm(start_state, [0, 3])
     with pytest.raises(ValueError):  # on not isolated
         noisy_graph_states.noisy_bp_dm(start_state, [0, 1])
-    start_graph = gg.Graph(4, [(1, 2)])
+    start_graph = nx.create_empty_copy(start_graph)
+    start_graph.add_edges_from([(1, 2)])
     start_state = NSFState(start_graph, [])
     p = 0.99
     depolarizing_weights = [(1 + 3 * p) / 4, (1 - p) / 4, (1 - p) / 4, (1 - p) / 4]
@@ -620,7 +625,7 @@ def test_invalid_bp_dm():
 
 
 def test_noisy_3_ghz_dm():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (2, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (2, 3)])
     start_state = NSFState(start_graph, [])
     p = 0.75
     depolarizing_weights = [(1 + 3 * p) / 4, (1 - p) / 4, (1 - p) / 4, (1 - p) / 4]

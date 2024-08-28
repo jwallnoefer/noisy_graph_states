@@ -7,11 +7,15 @@ graphepp as of version 0.4
 """
 
 import numpy as np
-import graphepp as gg
 from . import matrix as mat
 from cmath import sqrt
-from .. import noisy_graph_states as nsf
 import networkx as nx
+
+
+def local_complementation(graph: nx.Graph, index: int):
+    neighbours_complete_graph = nx.create_empty_copy(graph)
+    neighbours_complete_graph.update(nx.complete_graph(neighbourhood(graph, index)))
+    return nx.symmetric_difference(graph, neighbours_complete_graph)
 
 
 def graph_state(graph):
@@ -19,30 +23,30 @@ def graph_state(graph):
 
     Parameters
     ----------
-    graph : gg.Graph
+    graph : nx.Graph
         The graph describing the graph state.
 
     Returns
     -------
     np.ndarray
         A column-vector of the graph state given in the computational basis.
-        shape = (2**graph.N, 1)
+        shape = (2**N, 1)
 
     """
-    aux = [mat.x0] * graph.N
+    aux = [mat.x0] * len(graph)
     psi = mat.tensor(*aux)
-    for edge in graph.E:
+    for edge in graph.edges:
         psi = mat.Ucz(psi, *edge)
     return psi
 
 
 # Graph, ket state and density matrix of a Bell pair
-bipartite_graph = gg.Graph(2, [(0, 1)])
+bipartite_graph = nx.Graph([(0, 1)])
 bell_pair_ket = graph_state(bipartite_graph)
 bell_pair_dm = bell_pair_ket @ mat.H(bell_pair_ket)
 
 # Graph, ket state and density matrix of a 3-qubit GHZ state with the order leaf-root-leaf
-ghz_3_graph = gg.Graph(3, [(0, 1), (1, 2)])
+ghz_3_graph = nx.Graph([(0, 1), (1, 2)])
 ghz_3_ket = graph_state(ghz_3_graph)
 ghz_3_dm = ghz_3_ket @ mat.H(ghz_3_ket)
 
@@ -59,20 +63,14 @@ def graph_from_adj_matrix(adj):
 
     Returns
     -------
-    Graph
+    nx.Graph
         The graph corresponding to the adjacency matrix `adj`.
 
     """
     assert len(adj.shape) == 2
     assert adj.shape[0] == adj.shape[1]
     assert np.allclose(adj, adj.transpose())
-    N = adj.shape[0]
-    E = []
-    for i in range(N):
-        for j in range(i + 1, N):  # iterates over upper diagonal
-            if adj[i, j] == 1:
-                E += [(i, j)]
-    return gg.Graph(N, E)
+    return nx.Graph(adj)
 
 
 def disconnect_vertex(graph, index):
@@ -83,7 +81,7 @@ def disconnect_vertex(graph, index):
 
     Parameters
     ----------
-    graph : Graph
+    graph : nx.Graph
         The input graph.
     index : int
         The `index`-th vertex is disconnected. Counting starts at 0.
@@ -93,41 +91,40 @@ def disconnect_vertex(graph, index):
     Graph
         The updated graph.
     """
-    adj = graph.adj
-    adj[:, index] = np.zeros_like(adj[:, index])
-    adj[index, :] = np.zeros_like(adj[index, :])
-    return graph_from_adj_matrix(adj)
+    new_graph = graph.copy()
+    new_graph.remove_edges_from(graph.edges(index))
+    return new_graph
 
 
-def measure_z(graph: gg.Graph, index: int):
+def measure_z(graph: nx.Graph, index: int):
     return disconnect_vertex(graph, index)
 
 
-def measure_y(graph: gg.Graph, index: int):
-    graph = local_complementation(n=index, graph=graph)
+def measure_y(graph: nx.Graph, index: int):
+    graph = local_complementation(graph=graph, index=index)
     graph = measure_z(graph=graph, index=index)
     return graph
 
 
-def measure_x(graph: gg.Graph, index: int, b0: int or None = None):
+def measure_x(graph: nx.Graph, index: int, b0: int or None = None):
     if b0 is None:
-        neighbours = neighbourhood(graph=graph, index=index)
+        neighbours = neighbourhood(graph, index)
         try:
             b0 = neighbours[0]
         except IndexError:
             b0 = None
 
     else:
-        if b0 not in neighbourhood(graph=graph, index=index):
+        if b0 not in neighbourhood(graph, index):
             raise ValueError(
                 f"{b0=} is not in the neighbourhood of qubit {index} in graph {graph}."
             )
     if b0 is not None:
-        graph = local_complementation(n=b0, graph=graph)
-    graph = local_complementation(n=index, graph=graph)
+        graph = local_complementation(graph=graph, index=b0)
+    graph = local_complementation(graph=graph, index=index)
     graph = measure_z(graph=graph, index=index)
     if b0 is not None:
-        graph = local_complementation(n=b0, graph=graph)
+        graph = local_complementation(graph=graph, index=b0)
     return graph
 
 
@@ -136,7 +133,7 @@ def neighbourhood(graph, index):
 
     Parameters
     ----------
-    graph : gg.Graph
+    graph : nx.Graph
         The neighbours are defined according to this graph.
     index : int
         The `index`-th vertex is considered. Counting starts at 0.
@@ -147,7 +144,8 @@ def neighbourhood(graph, index):
         Contains all the neighbours of the `index`-th vertex.
 
     """
-    return tuple(np.nonzero(graph.adj[index, :])[0])
+    print(graph)
+    return tuple(graph[index])
 
 
 def update_graph_cnot(graph, source, target):
@@ -155,7 +153,7 @@ def update_graph_cnot(graph, source, target):
 
     Parameters
     ----------
-    graph : gg.Graph
+    graph : nx.Graph
         The CNOT is applied to this graph.
     source : int
         The `source`-th vertex is considered. Counting starts at 0.
@@ -164,23 +162,16 @@ def update_graph_cnot(graph, source, target):
 
     Returns
     -------
-    graph : gg.Graph
+    graph : nx.Graph
         Graph after the CNOT is applied.
 
     """
-    neighbours_source = neighbourhood(graph, source)
-    neighbours_target = neighbourhood(graph, target)
-    new_neighbours_source = nsf.add_or_remove(neighbours_target, neighbours_source)
-    adj = np.copy(graph.adj)
-    # first remove all edges from source
-    adj[:, source] = np.zeros_like(adj[:, source])
-    adj[source, :] = np.zeros_like(adj[source, :])
-    # then add them in again
-    for index in new_neighbours_source:
-        adj[source, index] = 1
-        adj[index, source] = 1
-    graph = graph_from_adj_matrix(adj)
-    return graph
+    new_graph = graph.copy()
+    neighbours_target = graph[target]
+    shared_neighbours = nx.common_neighbors(graph, source, target)
+    new_graph.add_edges_from([(source, i) for i in neighbours_target])
+    new_graph.remove_edges_from([(source, i) for i in shared_neighbours])
+    return new_graph
 
 
 def complement_op(graph, index):
@@ -188,7 +179,7 @@ def complement_op(graph, index):
 
     Parameters
     ----------
-    graph : gg.Graph
+    graph : nx.Graph
         The graph describing the adjacencies needed to define the operator.
     index : int
         The index of the vertex around which local complementation is performed.
@@ -202,10 +193,11 @@ def complement_op(graph, index):
 
     """
     a = np.array([[1]])
-    for i in range(graph.N):
+    neighbors = graph[index]
+    for i in range(len(graph)):
         if i == index:
             a = mat.tensor(a, 1 / sqrt(2) * (mat.I(2) - 1j * mat.X))
-        elif graph.adj[i, index]:
+        elif i in neighbors:
             a = mat.tensor(a, 1 / sqrt(2) * (mat.I(2) + 1j * mat.Z))
         else:
             a = mat.tensor(a, mat.I(2))
@@ -222,7 +214,7 @@ def Ugraph(rho, graph):
     ----------
     rho : np.ndarray
         A density matrix given in the computational basis.
-    graph : gg.Graph
+    graph : nx.Graph
         The graph defining the desired graph state basis.
 
     Returns
@@ -233,11 +225,12 @@ def Ugraph(rho, graph):
     """
     # again here the specific form of the graph state enters
     g_state = graph_state(graph)
+    N = len(graph)
     my_tuple = ()
-    for i in range(2**graph.N):  # get all 2**N basis states
+    for i in range(2**N):  # get all 2**N basis states
         operator = np.array([[1]])
-        for n in range(graph.N):  # build operator to generate state
-            if i & (1 << ((graph.N - 1) - n)):
+        for n in range(N):  # build operator to generate state
+            if i & (1 << ((N - 1) - n)):
                 operator = mat.tensor(operator, mat.Z)
             else:
                 operator = mat.tensor(operator, mat.I(2))
@@ -256,7 +249,7 @@ def Ungraph(rho, graph):
     ----------
     rho : np.ndarray
         A density matrix given in the graph state basis.
-    graph : gg.Graph
+    graph : nx.Graph
         The graph defining the graph state basis, in which is given `rho`.
 
     Returns
@@ -268,11 +261,12 @@ def Ungraph(rho, graph):
     """
     # again here the specific form of the graph state enters
     g_state = graph_state(graph)
+    N = len(graph)
     my_tuple = ()
-    for i in range(2**graph.N):  # get all 16 basis states
+    for i in range(2**N):  # get all 16 basis states
         operator = np.array([[1]])
-        for n in range(graph.N):  # build operator to generate state
-            if i & (1 << ((graph.N - 1) - n)):
+        for n in range(N):  # build operator to generate state
+            if i & (1 << ((N - 1) - n)):
                 operator = mat.tensor(operator, mat.Z)
             else:
                 operator = mat.tensor(operator, mat.I(2))
@@ -282,25 +276,8 @@ def Ungraph(rho, graph):
 
 
 def random_graph(num_vertices, p=0.5):
-    """Generate random gg.Graph.
+    """Generate random nx.Graph.
 
     Graph with `num_vertices` vertices. Each edge exists with probability `p`.
     """
-    edges = []
-    for i in range(num_vertices):
-        for j in range(i + 1, num_vertices):
-            if np.random.random() < p:
-                edges += [(i, j)]
-    return gg.Graph(N=num_vertices, E=edges)
-
-
-def _local_complementation_networkx(graph: nx.Graph, vertex):
-    neighbours_complete_graph = nx.create_empty_copy(graph)
-    neighbours_complete_graph.update(nx.complete_graph(graph.neighbors(vertex)))
-    return nx.symmetric_difference(graph, neighbours_complete_graph)
-
-
-def local_complementation(n, graph: gg.Graph):
-    nx_graph = nx.Graph(graph.adj)
-    new_graph = _local_complementation_networkx(nx_graph, vertex=n)
-    return gg.Graph(len(new_graph.nodes), new_graph.edges)
+    return nx.gnp_random_graph(n=num_vertices, p=p)

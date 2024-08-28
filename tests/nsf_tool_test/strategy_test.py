@@ -8,7 +8,7 @@ Also tests the methods of the strategy class.
 import numpy as np
 import noisy_graph_states.libs.graph as gt
 import noisy_graph_states as nsf
-import graphepp as gg
+import networkx as nx
 from time import time
 
 
@@ -61,7 +61,7 @@ def test_speedup():
 
     # this is the side-by-side strategy
     N = 32
-    linear_cluster = gg.Graph(N=N, E=[(i, i + 1) for i in range(N - 1)])
+    linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     sequence = tuple(("y", i) for i in range(1, N - 1))
     strategy = nsf.Strategy(graph=linear_cluster, sequence=sequence)
 
@@ -121,7 +121,7 @@ def test_populate_cache():
     # same as above test_speedup, but with populate cache instead of first application
     # this is the side-by-side strategy
     N = 32
-    linear_cluster = gg.Graph(N=N, E=[(i, i + 1) for i in range(N - 1)])
+    linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     sequence = tuple(("y", i) for i in range(1, N - 1))
     strategy = nsf.Strategy(graph=linear_cluster, sequence=sequence)
 

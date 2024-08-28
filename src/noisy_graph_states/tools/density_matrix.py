@@ -7,7 +7,7 @@ Mostly useful for verification.
 """
 
 import numpy as np
-import graphepp as gg
+import networkx as nx
 from dataclasses import dataclass
 import noisy_graph_states.libs.graph as gt
 import noisy_graph_states.libs.matrix as mat
@@ -26,7 +26,7 @@ class State(object):
 
     Parameters
     ----------
-    graph : gg.Graph
+    graph : nx.Graph
         The graph of the underlying noiseless graph state.
     density_matrix : np.ndarray
         Noisy density matrix.
@@ -38,7 +38,7 @@ class State(object):
 
     """
 
-    graph: gg.Graph
+    graph: nx.Graph
     density_matrix: np.ndarray
 
     def __eq__(self, other):
@@ -183,7 +183,7 @@ def local_complementation(state, index):
     complement_op = gt.complement_op(graph, index)
     new_density_matrix = complement_op @ density_matrix @ mat.H(complement_op)
     # Update the graph
-    new_graph = gt.local_complementation(index, graph)
+    new_graph = gt.local_complementation(graph, index)
     return State(new_graph, new_density_matrix)
 
 
@@ -208,7 +208,7 @@ def z_measurement(state, index):
     density_matrix = state.density_matrix
     # Update the density matrix
     projector = np.array([[1]])
-    for i in range(graph.N):
+    for i in range(len(graph)):
         if i == index:
             projector = mat.tensor(projector, np.dot(z0, mat.H(z0)))
         else:
@@ -292,10 +292,11 @@ def cnot(state, source, target):
     """
     graph = state.graph
     density_matrix = state.density_matrix
+    N = len(state.graph)
     new_density_matrix = (
-        mat.CNOT(source, target, graph.N)
+        mat.CNOT(source, target, N)
         @ density_matrix
-        @ mat.H(mat.CNOT(source, target, graph.N))
+        @ mat.H(mat.CNOT(source, target, N))
     )
     new_graph = gt.update_graph_cnot(graph, source, target)
     return State(new_graph, new_density_matrix)

@@ -5,7 +5,6 @@ name = "pypi"
 
 [packages]
 numpy = "*"
-graphepp = "*"
 networkx = "*"
 
 [dev-packages]

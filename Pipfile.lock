@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "58dba7109db2a89d35ab44535b249f5653c2dc9400db34cc77139d1ef583c2d6"
+            "sha256": "0c8d729c15e72776fa81fa4018d7b8b6e9944bc15decb891ef4431f84ef332d9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,15 +16,6 @@
         ]
     },
     "default": {
-        "graphepp": {
-            "hashes": [
-                "sha256:3ecade208bd096e6c28af5fa52f7e5b7e4efe2bedb10bf5fb94a6cc4323b5f07",
-                "sha256:6a9276eb3940f0a826940a0f26477884c2417a1326b2ee0623f0fb60614084ae"
-            ],
-            "index": "pypi",
-            "markers": "python_full_version >= '3.8.5'",
-            "version": "==0.4"
-        },
         "networkx": {
             "hashes": [
                 "sha256:9f1bb5cf3409bf324e0a722c20bdb4c20ee39bf1c30ce8ae499c8502b0b5e0c6",

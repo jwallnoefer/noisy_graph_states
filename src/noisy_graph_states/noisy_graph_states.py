@@ -1,7 +1,8 @@
 import pickle
 from collections import defaultdict
+
+import networkx as nx
 import numpy as np
-import graphepp as gg
 from noisy_graph_states.libs import graph as gt
 from dataclasses import dataclass
 import noisy_graph_states.libs.matrix as mat
@@ -170,7 +171,7 @@ class State(object):
 
     Parameters
     ----------
-    graph : gg.Graph
+    graph : nx.Graph
         The graph of the underlying graph state.
     maps : list[Map]
         Noise maps that are acting on the noiseless graph state.
@@ -182,7 +183,7 @@ class State(object):
 
     """
 
-    graph: gg.Graph
+    graph: nx.Graph
     maps: list  # of maps
 
     def __eq__(self, other):
@@ -207,9 +208,9 @@ class State(object):
         """
         if not isinstance(other, State):
             return NotImplemented
-        return self.graph == other.graph and compile_maps(*self.maps) == compile_maps(
-            *other.maps
-        )
+        return nx.utils.graphs_equal(self.graph, other.graph) and compile_maps(
+            *self.maps
+        ) == compile_maps(*other.maps)
 
 
 @dataclass(init=False, unsafe_hash=True)
@@ -241,12 +242,12 @@ class Strategy(object):
 
     """
 
-    graph: gg.Graph
+    graph: nx.Graph
     sequence: tuple
 
     def __init__(
         self,
-        graph: gg.Graph,
+        graph: nx.Graph,
         sequence: tuple,
         autoload: bool = True,
         autosave: bool = False,
@@ -298,6 +299,13 @@ class Strategy(object):
             graph_sequence += [current_graph]
         return tuple(graph_sequence)
 
+    @property
+    def _hash_str(self):
+        graph_str = str(tuple(self.graph.nodes)) + str(tuple(self.graph.edges))
+        sequence_str = str(self.sequence)
+        representation = graph_str + sequence_str
+        return hashlib.sha256(representation.encode("utf-8")).hexdigest()
+
     def __call__(self, other):
         """Apply the strategy to an initial state.
 
@@ -335,7 +343,7 @@ class Strategy(object):
         -------
         None
         """
-        for qubit_index in range(self.graph.N):
+        for qubit_index in range(len(self.graph)):
             z_pattern = (qubit_index,)
             x_pattern = gt.neighbourhood(graph=self.graph, index=qubit_index)
             y_pattern = tuple(sorted(x_pattern + z_pattern))
@@ -426,12 +434,12 @@ class Strategy(object):
         if path is None:
             path = os.path.join(
                 DEFAULT_CACHE_DIR,
-                hashlib.sha256(repr(self).encode("utf-8")).hexdigest() + ".pickle",
+                self._hash_str + ".pickle",
             )
         if not os.path.exists(DEFAULT_CACHE_DIR):
             os.makedirs(DEFAULT_CACHE_DIR)
         to_save = {
-            "_graph_sequence": [(g.N, g.E, g.sets) for g in self._graph_sequence],
+            "_graph_sequence": self._graph_sequence,
             "_transform_noise_cache": self._transform_noise_cache,
         }
         with open(path, "wb") as f:
@@ -441,13 +449,11 @@ class Strategy(object):
         if path is None:
             path = os.path.join(
                 DEFAULT_CACHE_DIR,
-                hashlib.sha256(repr(self).encode("utf-8")).hexdigest() + ".pickle",
+                self._hash_str + ".pickle",
             )
         with open(path, "rb") as f:
             loaded = pickle.load(f)
-        self._loaded_graph_sequence = [
-            gg.Graph(*graph_spec) for graph_spec in loaded["_graph_sequence"]
-        ]
+        self._loaded_graph_sequence = loaded["_graph_sequence"]
         self._transform_noise_cache = loaded["_transform_noise_cache"]
 
 
@@ -658,7 +664,7 @@ def local_complementation(state, index):
     State
         The state after the manipulation has been applied.
     """
-    new_graph = gt.local_complementation(n=index, graph=state.graph)
+    new_graph = gt.local_complementation(graph=state.graph, index=index)
     neighbours = gt.neighbourhood(state.graph, index)
     new_maps = [
         _complement_map(noise_map, index=index, neighbours=neighbours)
@@ -810,12 +816,12 @@ def _x_measure_noise(
     return noise
 
 
-def _x_neighbours_sequence(graph: gg.Graph, index: int, b0: int or None):
+def _x_neighbours_sequence(graph: nx.Graph, index: int, b0: int or None):
     """Return a sequence of neighbours in the required format for _x_measure_noise.
 
     Parameters
     ----------
-    graph : Graph
+    graph : nx.Graph
         the starting graph before the measurement
     index : int
         The index-th qubit that will be measured in X.
@@ -839,9 +845,9 @@ def _x_neighbours_sequence(graph: gg.Graph, index: int, b0: int or None):
     neighbour_sequence = []
     if b0 is not None:
         neighbour_sequence += [gt.neighbourhood(graph=graph, index=b0)]
-        graph = gt.local_complementation(n=b0, graph=graph)
+        graph = gt.local_complementation(graph=graph, index=b0)
     neighbour_sequence += [gt.neighbourhood(graph=graph, index=index)]
-    graph = gt.local_complementation(n=index, graph=graph)
+    graph = gt.local_complementation(graph=graph, index=index)
     graph = gt.measure_z(graph=graph, index=index)
     if b0 is not None:
         neighbour_sequence += [gt.neighbourhood(graph=graph, index=b0)]
@@ -1093,18 +1099,17 @@ def noisy_bp_dm(state, target_indices):
         This is the case if either there is no edge between the
         `target_indices`, or there are other vertices connected to them.
     """
-    adjacency_matrix = state.graph.adj
     if not len(target_indices) == 2:
         raise ValueError(
             f"Expected 2 target indices for Bell pair, got {len(target_indices)}."
         )
-    if not adjacency_matrix[target_indices[0], target_indices[1]]:
+    if (target_indices[0], target_indices[1]) not in state.graph.edges:
         raise ValueError(
             f"Cannot be reduced to Bell pair. {state.graph} has no edge between "
             + f"{target_indices[0]} and {target_indices[1]}."
         )
     for target_index in target_indices:
-        if np.sum(adjacency_matrix[target_index]) != 1:
+        if len(state.graph[target_index]) != 1:
             raise ValueError(
                 f"Cannot be reduced to Bell pair. {state.graph} has excess edges "
                 + f"connecting to vertex {target_index}."
@@ -1153,15 +1158,15 @@ def noisy_3_ghz_dm(state, target_root, target_leafs):
         sorted([target_root, target_leafs[1]]),
     ]
     # check if graph is compatible with extracting a GHZ
-    if tuple(target_edges[0]) not in state.graph.E:
+    if tuple(target_edges[0]) not in state.graph.edges:
         raise ValueError(
             f"Incompatible graph {state.graph} does not contain an edge {target_edges[0]}."
         )
-    if tuple(target_edges[1]) not in state.graph.E:
+    if tuple(target_edges[1]) not in state.graph.edges:
         raise ValueError(
             f"Incompatible graph {state.graph} does not contain an edge {target_edges[1]}."
         )
-    for edge in state.graph.E:
+    for edge in state.graph.edges:
         if target_root in edge:
             if not (target_edges[0] == sorted(edge) or target_edges[1] == sorted(edge)):
                 raise ValueError(
