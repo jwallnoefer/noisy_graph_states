@@ -144,7 +144,6 @@ def neighbourhood(graph, index):
         Contains all the neighbours of the `index`-th vertex.
 
     """
-    print(graph)
     return tuple(graph[index])
 
 

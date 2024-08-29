@@ -418,7 +418,7 @@ class Strategy(object):
 
         """
         expression = defaultdict(list)
-        for qubit_index in range(self.graph.N):
+        for qubit_index in range(len(self.graph)):
             z_pattern = (qubit_index,)
             x_pattern = gt.neighbourhood(graph=self.graph, index=qubit_index)
             y_pattern = tuple(sorted(x_pattern + z_pattern))
