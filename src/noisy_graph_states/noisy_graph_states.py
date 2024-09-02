@@ -217,21 +217,22 @@ class State(object):
 class Strategy(object):
     """A representation of a measurement strategy on a noisy graph state.
 
-    This only supports transformations that consist solely of
+    This supports transformations that consist of local complementations and
     measurements. (no merging/connecting operations)
     One can use this class instead of individual functions to make use
     of the built-in caching mechanisms - i.e. repeated applications
-    of the same strategy on different input states will be much faster.
+    of the same strategy on different input states will be much faster -
+    as well as the save and load features to retain this cache between runs.
 
     Parameters
     ----------
     graph : Graph
         The graph state at the beginning of the strategy.
     sequence : tuple[tuple[str, int]]
-        A measurement order corresponding to combined operators, which both
-        project on an eigenstate and perform the local Cliffords that return
+        Local complementations or measurements corresponding to combined operators,
+        which both project on an eigenstate and perform the local Cliffords that return
         the state to a graph state.
-        Individual instructions must be of form ("x" or "y" or "z", qubit_index).
+        Individual instructions must be of form ("x" or "y" or "z" or "lc", qubit_index).
         Optionally, x-measurements may specify the index of the special
         neighbour b0 as a third entry in the tuple ("x", qubit_index, b0).
 
@@ -292,9 +293,13 @@ class Strategy(object):
                 current_graph = gt.measure_x(
                     graph=current_graph, index=qubit_index, b0=b0
                 )
+            elif instruction_type == "lc":
+                current_graph = gt.local_complementation(
+                    graph=current_graph, index=qubit_index
+                )
             else:
                 raise ValueError(
-                    f"{instruction[0]} is not an accepted measurement type."
+                    f"{instruction[0]} is not an accepted strategy instruction type."
                 )
             graph_sequence += [current_graph]
         return tuple(graph_sequence)
@@ -389,9 +394,15 @@ class Strategy(object):
                     b0=b0,
                     neighbours_sequence=neighbours_sequence,
                 )
+            elif instruction_type == "lc":
+                current_noise = _complement_noise(
+                    noise=current_noise,
+                    index=qubit_index,
+                    neighbours=gt.neighbourhood(graph=current_graph, index=qubit_index),
+                )
             else:
                 raise ValueError(
-                    f"{instruction[0]} is not an accepted measurement type."
+                    f"{instruction[0]} is not an accepted strategy instruction type."
                 )
         transformed_noise = tuple(sorted(current_noise))
         self._transform_noise_cache[noise] = transformed_noise
