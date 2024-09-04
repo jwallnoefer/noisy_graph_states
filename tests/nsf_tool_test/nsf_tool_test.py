@@ -529,6 +529,39 @@ def test_reduce_maps():
     )
     assert reduced_map == target_map
 
+    # the following example led to the discovery of a bug in reduce_maps
+    example_map = noisy_graph_states.Map(
+        weights=[0.0025, 0.0025, 0.0025], noises=[(1, 10), (0, 1, 10), (0,)]
+    )
+    example_state = NSFState(gg.Graph(N=100, E=()), maps=[example_map])
+    reduced_map = noisy_graph_states.reduce_maps(
+        example_state, target_indices=[12, 67]
+    )[0]
+    known_result = noisy_graph_states.Map([], [])
+    assert reduced_map == known_result
+
+    # just to make sure, another example with explicitly cutting a Bell pair out of a bigger 1d cluster
+    N = 8
+    start_graph = gg.Graph(N, E=[(i, i + 1) for i in range(N - 1)])
+    start_state = NSFState(start_graph, [])
+    p = 0.75
+    depolarizing_weights = [(1 + 3 * p) / 4, (1 - p) / 4, (1 - p) / 4, (1 - p) / 4]
+    start_state = noisy_graph_states.pauli_noise(
+        start_state, list(range(N)), depolarizing_weights
+    )
+    final_state = noisy_graph_states.z_measurement(
+        noisy_graph_states.z_measurement(start_state, 2), 5
+    )
+    reduced_maps = noisy_graph_states.reduce_maps(final_state, [3, 4])
+    reduced_map = noisy_graph_states.compile_maps(*reduced_maps)
+    target_map_1 = Map(weights=depolarizing_weights[1:], noises=[[3], [4], [3, 4]])
+    target_map_2 = Map(weights=[2 * depolarizing_weights[1]], noises=[[3]])
+    target_map_3 = Map(weights=[2 * depolarizing_weights[1]], noises=[[4]])
+    target_map = noisy_graph_states.compile_maps(
+        *[target_map_1, target_map_1, target_map_2, target_map_3]
+    )
+    assert reduced_map == target_map
+
 
 def test_apply_nsf_maps_to_dm():
     density_matrix = bell_pair_dm

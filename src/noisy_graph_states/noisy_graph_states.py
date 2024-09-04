@@ -956,11 +956,11 @@ def reduce_maps(state, target_indices):
     for map in maps:
         reduced_noises = []
         for noise in map.noises:
-            noise = list(noise)
-            for index in noise:
+            new_noise = list(noise)
+            for index in noise:  # iterate over immutable original noise
                 if index not in target_indices:
-                    noise.remove(index)
-            reduced_noises += [tuple(noise)]
+                    new_noise.remove(index)
+            reduced_noises += [tuple(new_noise)]
         reduced_maps += [Map(map.weights, reduced_noises)]
     return reduced_maps
 
