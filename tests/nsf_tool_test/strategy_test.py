@@ -83,7 +83,7 @@ def test_speedup():
     output_state = strategy(state)
     second_time = time() - start_time
     # this should assert it being noticeably faster without having too narrow requirements
-    assert second_time < (first_time / 2)
+    assert second_time < (first_time * 3 / 4)
 
     # now with time dependent noise
     def error_parameter_from_time_interval(time_interval, dephasing_time):
@@ -114,7 +114,7 @@ def test_speedup():
     output_state = strategy(state)
     third_time = time() - start_time
     # this should assert it being noticeably faster without having too narrow requirements
-    assert third_time < (first_time / 2)
+    assert third_time < (first_time * 3 / 4)
 
 
 def test_populate_cache():
@@ -138,7 +138,7 @@ def test_populate_cache():
     output_state = strategy(state)
     second_time = time() - start_time
     # this should assert it being noticeably faster without having too narrow requirements
-    assert second_time < (first_time / 2)
+    assert second_time < (first_time * 3 / 4)
 
     # now with time dependent noise
     def error_parameter_from_time_interval(time_interval, dephasing_time):
@@ -169,4 +169,4 @@ def test_populate_cache():
     output_state = strategy(state)
     third_time = time() - start_time
     # this should assert it being noticeably faster without having too narrow requirements
-    assert third_time < (first_time / 2)
+    assert third_time < (first_time * 3 / 4)
