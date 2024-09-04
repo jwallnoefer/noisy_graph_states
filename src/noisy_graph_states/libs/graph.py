@@ -92,7 +92,7 @@ def disconnect_vertex(graph, index):
     Graph
         The updated graph.
     """
-    adj = graph.adj
+    adj = np.copy(graph.adj)
     adj[:, index] = np.zeros_like(adj[:, index])
     adj[index, :] = np.zeros_like(adj[index, :])
     return graph_from_adj_matrix(adj)
