@@ -13,7 +13,6 @@ authors = [
 license = {file = "LICENSE"}
 dependencies = [
     "numpy>=1.24.3",
-    "graphepp>=0.4",
     "networkx>=2.0.1",
 ]
 classifiers=[
