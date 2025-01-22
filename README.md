@@ -100,4 +100,4 @@ The noisy graph state package was used for these publications:
 
 > Imperfect quantum networks with tailored resource states <br>
 > M. F. Mor-Ruiz, J. Wallnöfer, W. Dür <br>
-> Preprint: [arXiv:2403.19778 [quant-ph]](https://doi.org/10.48550/arXiv.2403.19778)
+> Published version: [Quantum 9, 1605 (2025)](https://doi.org/10.22331/q-2025-01-21-1605).
