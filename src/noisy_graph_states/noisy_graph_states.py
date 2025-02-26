@@ -235,6 +235,9 @@ class Strategy(object):
         Individual instructions must be of form ("x" or "y" or "z" or "lc", qubit_index).
         Optionally, x-measurements may specify the index of the special
         neighbour b0 as a third entry in the tuple ("x", qubit_index, b0).
+    autoload : bool
+        If True, tries to load the strategy from the .pickle file in DEFAULT_CACHE_DIR matching
+        the Strategy's hash. Default: True.
 
     Attributes
     ----------
@@ -251,7 +254,6 @@ class Strategy(object):
         graph: nx.Graph,
         sequence: tuple,
         autoload: bool = True,
-        autosave: bool = False,
     ):
         self._graph = graph
         self._sequence = sequence
@@ -262,7 +264,6 @@ class Strategy(object):
                 self.load()
             except FileNotFoundError:
                 pass
-        self._autosave = autosave
 
     @property
     def graph(self):
@@ -442,6 +443,26 @@ class Strategy(object):
         return expression
 
     def save(self, path: [str, None] = None):
+        """Save the calculated caches to a file.
+
+        A new strategy can then simply load the precalculated results
+        in the future so future runs of the Strategy can save time.
+
+        When picking custom file names it is the user's responsibility
+        to only load compatible strategies.
+
+        Parameters
+        ----------
+        path : path-like or None
+            The file name in which to save the results. If None, saves in a
+            .pickle file in DEFAULT_CACHE_DIR with the strategy's hash as the name.
+            Default: None
+
+        Returns
+        -------
+        None
+
+        """
         if path is None:
             path = os.path.join(
                 DEFAULT_CACHE_DIR,
@@ -457,6 +478,25 @@ class Strategy(object):
             pickle.dump(to_save, f)
 
     def load(self, path: [str, None] = None):
+        """Load a saved cache from a file.
+
+        This loads the pre-calculated results that have been saved with
+        the `save` method from a previous
+        When picking custom file names it is the user's responsibility
+        to only load compatible strategies.
+
+        Parameters
+        ----------
+        path : path-like or None
+            The file name from which to load the results. If None, tries to load a
+            .pickle file in DEFAULT_CACHE_DIR with the strategy's hash as the name.
+            Default: None
+
+        Returns
+        -------
+        None
+
+        """
         if path is None:
             path = os.path.join(
                 DEFAULT_CACHE_DIR,
