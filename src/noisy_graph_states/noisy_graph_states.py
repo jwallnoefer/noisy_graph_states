@@ -213,7 +213,7 @@ class State(object):
         ) == compile_maps(*other.maps)
 
 
-@dataclass(init=False, unsafe_hash=True)
+@dataclass
 class Strategy(object):
     """A representation of a measurement strategy on a noisy graph state.
 
@@ -237,7 +237,7 @@ class Strategy(object):
         neighbour b0 as a third entry in the tuple ("x", qubit_index, b0).
     autoload : bool
         If True, tries to load the strategy from the .pickle file in DEFAULT_CACHE_DIR matching
-        the Strategy's hash. Default: True.
+        the Strategy's `_hash_str`. Default: True.
 
     Attributes
     ----------
@@ -468,8 +468,8 @@ class Strategy(object):
                 DEFAULT_CACHE_DIR,
                 self._hash_str + ".pickle",
             )
-        if not os.path.exists(DEFAULT_CACHE_DIR):
-            os.makedirs(DEFAULT_CACHE_DIR)
+            if not os.path.exists(DEFAULT_CACHE_DIR):
+                os.makedirs(DEFAULT_CACHE_DIR)
         to_save = {
             "_graph_sequence": self._graph_sequence,
             "_transform_noise_cache": self._transform_noise_cache,
