@@ -116,7 +116,7 @@ jobs:
           name: dist
           path: dist
       - name: Publish distribution to Test PyPI
-        uses: pypa/gh-action-pypi-publish@v1.8.14
+        uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           user: __token__
           password: ${{ secrets.test_pypi_token }}
@@ -134,12 +134,12 @@ jobs:
           name: dist
           path: dist
       - name: Publish package to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.8.14
+        uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           user: __token__
           password: ${{ secrets.pypi_token }}
       - name: Publish distribution to Test PyPI
-        uses: pypa/gh-action-pypi-publish@v1.8.14
+        uses: pypa/gh-action-pypi-publish@v1.12.4
         with:
           user: __token__
           password: ${{ secrets.test_pypi_token }}
