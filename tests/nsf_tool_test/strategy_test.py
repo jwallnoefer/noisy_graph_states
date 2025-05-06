@@ -107,7 +107,7 @@ def test_speedup():
     # not sure how to RELIABLY test this
 
     # this is the side-by-side strategy
-    N = 32
+    N = 64
     linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     sequence = tuple(("y", i) for i in range(1, N - 1))
     strategy = nsf.Strategy(graph=linear_cluster, sequence=sequence)
