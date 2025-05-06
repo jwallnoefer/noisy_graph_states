@@ -1,5 +1,5 @@
+import networkx as nx
 import numpy as np
-import graphepp as gg
 import noisy_graph_states
 import noisy_graph_states.libs.graph as gt
 import noisy_graph_states.libs.matrix as mat
@@ -10,7 +10,7 @@ from noisy_graph_states.tools.density_matrix import State as DMState
 
 
 def test_x_noise():
-    start_graph = gg.Graph(2, [(0, 1)])
+    start_graph = nx.Graph([(0, 1)])
     nsf_state = NSFState(start_graph, [])
     nsf_state = noisy_graph_states.x_noise(nsf_state, [0, 1], 1)
     nsf_dm_state = noisy_graph_states.noisy_bp_dm(nsf_state, [0, 1])
@@ -20,7 +20,7 @@ def test_x_noise():
 
 
 def test_y_noise():
-    start_graph = gg.Graph(2, [(0, 1)])
+    start_graph = nx.Graph([(0, 1)])
     nsf_state = NSFState(start_graph, [])
     nsf_state = noisy_graph_states.y_noise(nsf_state, [1], 1)
     nsf_dm_state = noisy_graph_states.noisy_bp_dm(nsf_state, [0, 1])
@@ -30,19 +30,17 @@ def test_y_noise():
 
 
 def test_z_noise():
-    start_graph = gg.Graph(2, [(0, 1)])
+    start_graph = nx.Graph([(0, 1)])
     nsf_state = NSFState(start_graph, [])
     nsf_state = noisy_graph_states.z_noise(nsf_state, [1], 1)
     nsf_dm_state = noisy_graph_states.noisy_bp_dm(nsf_state, [0, 1])
     dm_state = DMState(start_graph, bell_pair_dm)
     dm_state = dm.z_noise(dm_state, [1], 1)
-    # print(nsf_dm_state)
-    # print(dm_state.density_matrix)
     assert np.allclose(nsf_dm_state, dm_state.density_matrix)
 
 
 def test_pauli_noise():
-    start_graph = gg.Graph(2, [(0, 1)])
+    start_graph = nx.Graph([(0, 1)])
     nsf_state = NSFState(start_graph, [])
     p = 0.75
     coefficients = [(1 + 3 * p) / 4, (1 - p) / 4, (1 - p) / 4, (1 - p) / 4]
@@ -54,7 +52,7 @@ def test_pauli_noise():
 
 
 def test_local_complementation():
-    start_graph = gg.Graph(3, [(0, 1), (1, 2), (0, 2)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (0, 2)])
     nsf_state = NSFState(start_graph, [])
     nsf_state_x = noisy_graph_states.x_noise(nsf_state, [1], 1)
     nsf_state_y = noisy_graph_states.y_noise(nsf_state, [1], 1)
@@ -81,7 +79,7 @@ def test_local_complementation():
 
 
 def test_z_measurement():
-    start_graph = gg.Graph(4, [(0, 1), (1, 2), (2, 3)])
+    start_graph = nx.Graph([(0, 1), (1, 2), (2, 3)])
     nsf_state = NSFState(start_graph, [])
     nsf_state_x = noisy_graph_states.x_noise(nsf_state, [3], 1)
     nsf_state_y = noisy_graph_states.y_noise(nsf_state, [3], 1)
@@ -111,7 +109,7 @@ def test_z_measurement():
 
 
 def test_y_measurement():
-    start_graph = gg.Graph(4, [(0, 1), (1, 3), (3, 2)])
+    start_graph = nx.Graph([(0, 1), (1, 3), (3, 2)])
     nsf_state = NSFState(start_graph, [])
     nsf_state_x = noisy_graph_states.x_noise(nsf_state, [3], 1)
     nsf_state_y = noisy_graph_states.y_noise(nsf_state, [3], 1)
@@ -141,7 +139,7 @@ def test_y_measurement():
 
 
 def test_x_measurement():
-    start_graph = gg.Graph(4, [(0, 3), (1, 3), (3, 2)])
+    start_graph = nx.Graph([(0, 3), (1, 3), (3, 2)])
     nsf_state = NSFState(start_graph, [])
     nsf_state_x = noisy_graph_states.x_noise(nsf_state, [3], 1)
     nsf_state_y = noisy_graph_states.y_noise(nsf_state, [3], 1)
@@ -171,7 +169,8 @@ def test_x_measurement():
 
 
 def test_cnot():
-    start_graph = gg.Graph(3, [(0, 1)])
+    start_graph = nx.empty_graph(3)
+    start_graph.add_edges_from([(0, 1)])
     nsf_state = NSFState(start_graph, [])
     nsf_state_x = noisy_graph_states.x_noise(nsf_state, [0], 1)
     nsf_state_y = noisy_graph_states.y_noise(nsf_state, [0], 1)
@@ -198,7 +197,7 @@ def test_cnot():
 
 
 def test_merge():
-    start_graph = gg.Graph(4, [(0, 1), (3, 2)])
+    start_graph = nx.Graph([(0, 1), (3, 2)])
     nsf_state = NSFState(start_graph, [])
     nsf_state_x = noisy_graph_states.x_noise(nsf_state, [3], 1)
     nsf_state_y = noisy_graph_states.y_noise(nsf_state, [3], 1)
@@ -228,7 +227,7 @@ def test_merge():
 
 
 def test_full_merge():
-    start_graph = gg.Graph(5, [(0, 1), (1, 4), (3, 2)])
+    start_graph = nx.Graph([(0, 1), (1, 4), (3, 2)])
     nsf_state = NSFState(start_graph, [])
     nsf_state_x = noisy_graph_states.x_noise(nsf_state, [3], 1)
     nsf_state_y = noisy_graph_states.y_noise(nsf_state, [3], 1)

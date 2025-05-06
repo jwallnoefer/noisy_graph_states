@@ -1,5 +1,5 @@
 noisy_graph_states.tools module
-==============================
+===============================
 
 Additional functions that makes working with the package more straightforward.
 
