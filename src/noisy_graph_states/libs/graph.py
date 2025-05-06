@@ -13,6 +13,26 @@ import networkx as nx
 
 
 def local_complementation(graph: nx.Graph, index: int):
+    """Return the new graph after local complementation.
+
+    Local complementation is a graph operation that inverts the subgraph induced
+    by the neighbourhood of the `index` vertex.
+
+    Parameters
+    ----------
+    graph : nx.Graph
+        The input graph.
+    index : int
+        The label of a vertex in the graph. The local complementation operation
+        is performed with respect to this vertex.
+
+
+    Returns
+    -------
+    nx.Graph
+        The graph after the local complementation ahs been applied.
+
+    """
     neighbours_complete_graph = nx.create_empty_copy(graph)
     neighbours_complete_graph.update(nx.complete_graph(neighbourhood(graph, index)))
     return nx.symmetric_difference(graph, neighbours_complete_graph)
@@ -97,16 +117,73 @@ def disconnect_vertex(graph, index):
 
 
 def measure_z(graph: nx.Graph, index: int):
+    """Apply the graph update rule corresponding to a Z-measurement.
+
+    The `index` vertex is disconnected from the rest of the graph.
+
+    Parameters
+    ----------
+    graph : nx.Graph
+    index : int
+        The vertex corresponding to the qubit that is measured in Z.
+
+    Returns
+    -------
+    nx.Graph
+
+    """
     return disconnect_vertex(graph, index)
 
 
 def measure_y(graph: nx.Graph, index: int):
+    """Apply the graph update rule corresponding to a Y-measurement.
+
+    First, a local complementation with respect to the `index` vertex
+    is performed. Then, it is disconnected from the rest of the graph.
+
+    Parameters
+    ----------
+    graph : nx.Graph
+    index : int
+        The vertex corresponding to the qubit that is measured in Y.
+
+    Returns
+    -------
+    nx.Graph
+
+    """
     graph = local_complementation(graph=graph, index=index)
     graph = measure_z(graph=graph, index=index)
     return graph
 
 
 def measure_x(graph: nx.Graph, index: int, b0: int or None = None):
+    """Apply the graph update rule corresponding to an X-measurement.
+
+    For this rule a special neighbour `b0` of the `index` vertex is
+    specified for this operation unless the `index` vertex is isolated.
+    The following four steps are performed:
+    1. Local complementation with respect to the `b0` vertex.
+    2. Local complementation with respect to the `index` vertex.
+    3. Disconnect the `index` vertex.
+    4. Local complementation with respect to the `b0` vertex.
+
+    Parameters
+    ----------
+    graph : nx.Graph
+    index : int
+        The vertex corresponding to the qubit that is measured in Z.
+    b0 : int or None
+        The special neighbour `b0` of the `index` vertex. If None,
+        a neighbour will automatically be picked (according to the edge listed
+        first in the networkx graph) - or no neighbour if the `index` vertex
+        is isolated.
+
+    Returns
+    -------
+    nx.Graph
+
+    """
     if b0 is None:
         neighbours = neighbourhood(graph, index)
         try:

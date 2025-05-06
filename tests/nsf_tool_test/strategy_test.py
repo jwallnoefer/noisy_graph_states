@@ -167,7 +167,7 @@ def test_speedup():
 def test_populate_cache():
     # same as above test_speedup, but with populate cache instead of first application
     # this is the side-by-side strategy
-    N = 32
+    N = 64
     linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     sequence = tuple(("y", i) for i in range(1, N - 1))
     strategy = nsf.Strategy(graph=linear_cluster, sequence=sequence)
