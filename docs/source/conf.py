@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "noisy_graph_states"
-copyright = "2023, Julius Wallnöfer; 2024, Julius Wallnöfer and Maria Flors Mor-Ruiz"
-author = "Julius Wallnöfer"
+copyright = "2023 Julius Wallnöfer; 2024-2025 Julius Wallnöfer and Maria Flors Mor-Ruiz"
+author = "Julius Wallnöfer and Maria Flors Mor-Ruiz"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

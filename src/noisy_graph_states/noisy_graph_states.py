@@ -1,11 +1,17 @@
+import pickle
 from collections import defaultdict
+
+import networkx as nx
 import numpy as np
-import graphepp as gg
 from noisy_graph_states.libs import graph as gt
 from dataclasses import dataclass
 import noisy_graph_states.libs.matrix as mat
 from copy import deepcopy
 from functools import lru_cache, cached_property
+import hashlib
+import os
+
+DEFAULT_CACHE_DIR = os.path.join(".cache", "noisy_graph_states")
 
 
 @dataclass
@@ -32,7 +38,7 @@ class Map(object):
     """
 
     weights: list
-    noises: list[tuple[int]]
+    noises: list
 
     def __call__(self, other):
         """Apply the Map to a State object.
@@ -165,7 +171,7 @@ class State(object):
 
     Parameters
     ----------
-    graph : gg.Graph
+    graph : nx.Graph
         The graph of the underlying graph state.
     maps : list[Map]
         Noise maps that are acting on the noiseless graph state.
@@ -177,8 +183,8 @@ class State(object):
 
     """
 
-    graph: gg.Graph
-    maps: list[Map]  # of maps
+    graph: nx.Graph
+    maps: list  # of maps
 
     def __eq__(self, other):
         """States are equal if the graphs are equal and the maps are equivalent.
@@ -202,32 +208,36 @@ class State(object):
         """
         if not isinstance(other, State):
             return NotImplemented
-        return self.graph == other.graph and compile_maps(*self.maps) == compile_maps(
-            *other.maps
-        )
+        return nx.utils.graphs_equal(self.graph, other.graph) and compile_maps(
+            *self.maps
+        ) == compile_maps(*other.maps)
 
 
-@dataclass(frozen=True)
+@dataclass
 class Strategy(object):
     """A representation of a measurement strategy on a noisy graph state.
 
-    This only supports transformations that consist solely of
+    This supports transformations that consist of local complementations and
     measurements. (no merging/connecting operations)
     One can use this class instead of individual functions to make use
     of the built-in caching mechanisms - i.e. repeated applications
-    of the same strategy on different input states will be much faster.
+    of the same strategy on different input states will be much faster -
+    as well as the save and load features to retain this cache between runs.
 
     Parameters
     ----------
     graph : Graph
         The graph state at the beginning of the strategy.
     sequence : tuple[tuple[str, int]]
-        A measurement order corresponding to combined operators, which both
-        project on an eigenstate and perform the local Cliffords that return
+        Local complementations or measurements corresponding to combined operators,
+        which both project on an eigenstate and perform the local Cliffords that return
         the state to a graph state.
-        Individual instructions must be of form ("x" or "y" or "z", qubit_index).
+        Individual instructions must be of form ("x" or "y" or "z" or "lc", qubit_index).
         Optionally, x-measurements may specify the index of the special
         neighbour b0 as a third entry in the tuple ("x", qubit_index, b0).
+    autoload : bool
+        If True, tries to load the strategy from the .pickle file in DEFAULT_CACHE_DIR matching
+        the Strategy's `_hash_str`. Default: True.
 
     Attributes
     ----------
@@ -236,11 +246,37 @@ class Strategy(object):
 
     """
 
-    graph: gg.Graph
-    sequence: tuple[tuple[str, int]]
+    graph: nx.Graph
+    sequence: tuple
+
+    def __init__(
+        self,
+        graph: nx.Graph,
+        sequence: tuple,
+        autoload: bool = True,
+    ):
+        self._graph = graph
+        self._sequence = sequence
+        self._loaded_graph_sequence = None
+        self._transform_noise_cache = {}
+        if autoload:
+            try:
+                self.load()
+            except FileNotFoundError:
+                pass
+
+    @property
+    def graph(self):
+        return self._graph
+
+    @property
+    def sequence(self):
+        return self._sequence
 
     @cached_property
     def _graph_sequence(self):
+        if self._loaded_graph_sequence is not None:
+            return self._loaded_graph_sequence
         current_graph = self.graph
         graph_sequence = [current_graph]
         for instruction in self.sequence:
@@ -258,12 +294,23 @@ class Strategy(object):
                 current_graph = gt.measure_x(
                     graph=current_graph, index=qubit_index, b0=b0
                 )
+            elif instruction_type == "lc":
+                current_graph = gt.local_complementation(
+                    graph=current_graph, index=qubit_index
+                )
             else:
                 raise ValueError(
-                    f"{instruction[0]} is not an accepted measurement type."
+                    f"{instruction[0]} is not an accepted strategy instruction type."
                 )
             graph_sequence += [current_graph]
         return tuple(graph_sequence)
+
+    @property
+    def _hash_str(self):
+        graph_str = str(tuple(self.graph.nodes)) + str(tuple(self.graph.edges))
+        sequence_str = str(self.sequence)
+        representation = graph_str + sequence_str
+        return hashlib.sha256(representation.encode("utf-8")).hexdigest()
 
     def __call__(self, other):
         """Apply the strategy to an initial state.
@@ -302,7 +349,7 @@ class Strategy(object):
         -------
         None
         """
-        for qubit_index in range(self.graph.N):
+        for qubit_index in range(len(self.graph)):
             z_pattern = (qubit_index,)
             x_pattern = gt.neighbourhood(graph=self.graph, index=qubit_index)
             y_pattern = tuple(sorted(x_pattern + z_pattern))
@@ -310,8 +357,10 @@ class Strategy(object):
             self._transform_noise(noise=y_pattern)
             self._transform_noise(noise=x_pattern)
 
-    @lru_cache(maxsize=None)
-    def _transform_noise(self, noise: tuple[int]):
+    def _transform_noise(self, noise: tuple):
+        cached_value = self._transform_noise_cache.get(noise, None)
+        if cached_value is not None:
+            return cached_value
         current_noise = noise
         for instruction, current_graph in zip(self.sequence, self._graph_sequence):
             instruction_type = instruction[0]
@@ -346,11 +395,19 @@ class Strategy(object):
                     b0=b0,
                     neighbours_sequence=neighbours_sequence,
                 )
+            elif instruction_type == "lc":
+                current_noise = _complement_noise(
+                    noise=current_noise,
+                    index=qubit_index,
+                    neighbours=gt.neighbourhood(graph=current_graph, index=qubit_index),
+                )
             else:
                 raise ValueError(
-                    f"{instruction[0]} is not an accepted measurement type."
+                    f"{instruction[0]} is not an accepted strategy instruction type."
                 )
-        return tuple(sorted(current_noise))
+        transformed_noise = tuple(sorted(current_noise))
+        self._transform_noise_cache[noise] = transformed_noise
+        return transformed_noise
 
     def _transform_map(self, noise_map: Map):
         new_noises = [self._transform_noise(noise) for noise in noise_map.noises]
@@ -373,7 +430,7 @@ class Strategy(object):
 
         """
         expression = defaultdict(list)
-        for qubit_index in range(self.graph.N):
+        for qubit_index in range(len(self.graph)):
             z_pattern = (qubit_index,)
             x_pattern = gt.neighbourhood(graph=self.graph, index=qubit_index)
             y_pattern = tuple(sorted(x_pattern + z_pattern))
@@ -384,6 +441,71 @@ class Strategy(object):
             z_outcome = self._transform_noise(noise=z_pattern)
             expression[z_outcome] += [f"z_{qubit_index}"]
         return expression
+
+    def save(self, path: [str, None] = None):
+        """Save the calculated caches to a file.
+
+        A new strategy can then simply load the precalculated results
+        in the future so future runs of the Strategy can save time.
+
+        When picking custom file names it is the user's responsibility
+        to only load compatible strategies.
+
+        Parameters
+        ----------
+        path : path-like or None
+            The file name in which to save the results. If None, saves in a
+            .pickle file in DEFAULT_CACHE_DIR with the strategy's hash as the name.
+            Default: None
+
+        Returns
+        -------
+        None
+
+        """
+        if path is None:
+            path = os.path.join(
+                DEFAULT_CACHE_DIR,
+                self._hash_str + ".pickle",
+            )
+            if not os.path.exists(DEFAULT_CACHE_DIR):
+                os.makedirs(DEFAULT_CACHE_DIR)
+        to_save = {
+            "_graph_sequence": self._graph_sequence,
+            "_transform_noise_cache": self._transform_noise_cache,
+        }
+        with open(path, "wb") as f:
+            pickle.dump(to_save, f)
+
+    def load(self, path: [str, None] = None):
+        """Load a saved cache from a file.
+
+        This loads the pre-calculated results that have been saved with
+        the `save` method from a previous
+        When picking custom file names it is the user's responsibility
+        to only load compatible strategies.
+
+        Parameters
+        ----------
+        path : path-like or None
+            The file name from which to load the results. If None, tries to load a
+            .pickle file in DEFAULT_CACHE_DIR with the strategy's hash as the name.
+            Default: None
+
+        Returns
+        -------
+        None
+
+        """
+        if path is None:
+            path = os.path.join(
+                DEFAULT_CACHE_DIR,
+                self._hash_str + ".pickle",
+            )
+        with open(path, "rb") as f:
+            loaded = pickle.load(f)
+        self._loaded_graph_sequence = loaded["_graph_sequence"]
+        self._transform_noise_cache = loaded["_transform_noise_cache"]
 
 
 def add_or_remove(index_list, noise):
@@ -593,7 +715,7 @@ def local_complementation(state, index):
     State
         The state after the manipulation has been applied.
     """
-    new_graph = gg.local_complementation(n=index, graph=state.graph)
+    new_graph = gt.local_complementation(graph=state.graph, index=index)
     neighbours = gt.neighbourhood(state.graph, index)
     new_maps = [
         _complement_map(noise_map, index=index, neighbours=neighbours)
@@ -602,7 +724,7 @@ def local_complementation(state, index):
     return State(graph=new_graph, maps=new_maps)
 
 
-def _z_measure_noise(noise: tuple[int], index: int):
+def _z_measure_noise(noise: tuple, index: int):
     """Update the noise pattern under a Pauli-Z measurement.
 
     Parameters
@@ -650,7 +772,7 @@ def z_measurement(state, index):
     return State(graph=new_graph, maps=new_maps)
 
 
-def _y_measure_noise(noise: tuple[int], index: int, neighbours: tuple[int]):
+def _y_measure_noise(noise: tuple, index: int, neighbours: tuple):
     """Update the noise pattern under a Pauli-Y measurement.
 
     Parameters
@@ -700,10 +822,10 @@ def y_measurement(state, index):
 
 
 def _x_measure_noise(
-    noise: tuple[int],
+    noise: tuple,
     index: int,
     b0: int or None,
-    neighbours_sequence: list[tuple[int]],
+    neighbours_sequence: list,
 ):
     """Update the noise pattern under a Pauli-X measurement.
 
@@ -745,12 +867,12 @@ def _x_measure_noise(
     return noise
 
 
-def _x_neighbours_sequence(graph: gg.Graph, index: int, b0: int or None):
+def _x_neighbours_sequence(graph: nx.Graph, index: int, b0: int or None):
     """Return a sequence of neighbours in the required format for _x_measure_noise.
 
     Parameters
     ----------
-    graph : Graph
+    graph : nx.Graph
         the starting graph before the measurement
     index : int
         The index-th qubit that will be measured in X.
@@ -774,13 +896,13 @@ def _x_neighbours_sequence(graph: gg.Graph, index: int, b0: int or None):
     neighbour_sequence = []
     if b0 is not None:
         neighbour_sequence += [gt.neighbourhood(graph=graph, index=b0)]
-        graph = gg.local_complementation(n=b0, graph=graph)
+        graph = gt.local_complementation(graph=graph, index=b0)
     neighbour_sequence += [gt.neighbourhood(graph=graph, index=index)]
-    graph = gg.local_complementation(n=index, graph=graph)
+    graph = gt.local_complementation(graph=graph, index=index)
     graph = gt.measure_z(graph=graph, index=index)
     if b0 is not None:
         neighbour_sequence += [gt.neighbourhood(graph=graph, index=b0)]
-        # graph = gg.local_complementation(n=b0, graph=graph)
+        # graph = gt.local_complementation(n=b0, graph=graph)
     return neighbour_sequence
 
 
@@ -1028,18 +1150,17 @@ def noisy_bp_dm(state, target_indices):
         This is the case if either there is no edge between the
         `target_indices`, or there are other vertices connected to them.
     """
-    adjacency_matrix = state.graph.adj
     if not len(target_indices) == 2:
         raise ValueError(
             f"Expected 2 target indices for Bell pair, got {len(target_indices)}."
         )
-    if not adjacency_matrix[target_indices[0], target_indices[1]]:
+    if (target_indices[0], target_indices[1]) not in state.graph.edges:
         raise ValueError(
             f"Cannot be reduced to Bell pair. {state.graph} has no edge between "
             + f"{target_indices[0]} and {target_indices[1]}."
         )
     for target_index in target_indices:
-        if np.sum(adjacency_matrix[target_index]) != 1:
+        if len(state.graph[target_index]) != 1:
             raise ValueError(
                 f"Cannot be reduced to Bell pair. {state.graph} has excess edges "
                 + f"connecting to vertex {target_index}."
@@ -1088,15 +1209,15 @@ def noisy_3_ghz_dm(state, target_root, target_leafs):
         sorted([target_root, target_leafs[1]]),
     ]
     # check if graph is compatible with extracting a GHZ
-    if tuple(target_edges[0]) not in state.graph.E:
+    if tuple(target_edges[0]) not in state.graph.edges:
         raise ValueError(
             f"Incompatible graph {state.graph} does not contain an edge {target_edges[0]}."
         )
-    if tuple(target_edges[1]) not in state.graph.E:
+    if tuple(target_edges[1]) not in state.graph.edges:
         raise ValueError(
             f"Incompatible graph {state.graph} does not contain an edge {target_edges[1]}."
         )
-    for edge in state.graph.E:
+    for edge in state.graph.edges:
         if target_root in edge:
             if not (target_edges[0] == sorted(edge) or target_edges[1] == sorted(edge)):
                 raise ValueError(

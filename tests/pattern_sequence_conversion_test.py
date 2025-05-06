@@ -1,5 +1,4 @@
-import numpy as np
-import graphepp as gg
+import networkx as nx
 from random import choices
 from itertools import permutations
 from collections import defaultdict
@@ -12,7 +11,7 @@ from noisy_graph_states.tools.patterns import pattern_to_all_sequences
 def _order_to_pattern(sequence, graph):
     """An alternative conversion function for only y measurements"""
     tracking = defaultdict(int)
-    output = ["."] * graph.N
+    output = ["."] * len(graph)
     for index in sequence:
         neighbours = gt.neighbourhood(graph, index)
         for neighbour in neighbours:
@@ -29,21 +28,16 @@ def _order_to_pattern(sequence, graph):
 
 
 def _random_graph(num_vertices, p=0.5):
-    """Generate random gg.Graph.
+    """Generate random nx.Graph.
 
     Graph with `num_vertices` vertices. Each edge exists with probability `p`.
     """
-    edges = []
-    for i in range(num_vertices):
-        for j in range(i + 1, num_vertices):
-            if np.random.random() < p:
-                edges += [(i, j)]
-    return gg.Graph(N=num_vertices, E=edges)
+    return nx.gnp_random_graph(n=num_vertices, p=p)
 
 
 def test_y_equivalence():
     for N in range(3, 9):
-        start_graph = gg.Graph(N, [(i, i + 1) for i in range(N - 1)])
+        start_graph = nx.Graph([(i, i + 1) for i in range(N - 1)])
         for order in permutations(range(1, N - 1)):
             seq = [("y", idx) for idx in order]
             pattern = sequence_to_pattern(seq, start_graph)
@@ -53,7 +47,9 @@ def test_y_equivalence():
 
 def test_pattern_reversible_lcs():
     for N in range(1, 12):
-        start_graph = gg.Graph(N, [(i, i + 1) for i in range(N - 1)])
+        start_graph = nx.Graph([(i, i + 1) for i in range(N - 1)])
+        if N == 1:
+            start_graph.add_node(0)
         for _ in range(10):
             input_pattern = choices(["x", "y", "z", "."], k=N)
             sequence = pattern_to_sequence(pattern=input_pattern, graph=start_graph)
@@ -73,7 +69,9 @@ def test_pattern_reversible_general():
 
 def test_pattern_all_reversible_lcs():
     for N in range(1, 6):
-        start_graph = gg.Graph(N, [(i, i + 1) for i in range(N - 1)])
+        start_graph = nx.Graph([(i, i + 1) for i in range(N - 1)])
+        if N == 1:
+            start_graph.add_node(0)
         for _ in range(10):
             input_pattern = choices(["x", "y", "z", "."], k=N)
             sequences = pattern_to_all_sequences(

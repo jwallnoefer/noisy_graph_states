@@ -4,7 +4,7 @@ A collection of measurement strategies and patterns on 1D cluster states.
 """
 
 import math
-import graphepp as gg
+import networkx as nx
 from itertools import permutations
 from noisy_graph_states import State
 from noisy_graph_states import Strategy
@@ -27,7 +27,7 @@ def side_to_side(N):
         Strategy corresponding to the strategy of measuring side to side.
     """
     # Create the corresponding 1D cluster state.
-    linear_cluster = gg.Graph(N=N, E=[(i, i + 1) for i in range(N - 1)])
+    linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     # Create the corresponding sequence.
     sequence = tuple(("y", i) for i in range(1, N - 1))
     # Save the strategy (sequence and cluster).
@@ -51,7 +51,7 @@ def reverse_side_to_side(N):
         Strategy corresponding to the strategy of measuring reversed side to side.
     """
     # Create the corresponding 1D cluster state.
-    linear_cluster = gg.Graph(N=N, E=[(i, i + 1) for i in range(N - 1)])
+    linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     # Create the corresponding sequence.
     sequence = tuple(("y", i) for i in reversed(range(1, N - 1)))
     # Save the strategy (sequence and cluster).
@@ -82,7 +82,7 @@ def every_second(N):
         Strategy corresponding to the strategy of measuring every second qubit.
     """
     # Create the corresponding 1D cluster state.
-    linear_cluster = gg.Graph(N=N, E=[(i, i + 1) for i in range(N - 1)])
+    linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     # Create the corresponding sequence.
     sequence = tuple()
     r = 0
@@ -111,7 +111,7 @@ def pairs(N):
         Strategy corresponding to the strategy of measuring in pairs.
     """
     # Create the corresponding 1D cluster state.
-    linear_cluster = gg.Graph(N=N, E=[(i, i + 1) for i in range(N - 1)])
+    linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     # Create the corresponding sequence.
     sequence = tuple()
     k = 1
@@ -148,7 +148,7 @@ def all_y_strategies(N):
         List of all the possible Strategy objects given a certain N.
     """
     # Create the corresponding 1D cluster state.
-    linear_cluster = gg.Graph(N=N, E=[(i, i + 1) for i in range(N - 1)])
+    linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     # Create an empty list to store the outcomes.
     strategies = []
     # Create a list of all possible permutations of the indices of the measured qubits.
@@ -184,7 +184,7 @@ def strategy_plus_z(strategy):
     # The length of the initial strategy is only the inner neighbors.
     N = len(strategy.sequence) + 4
     # Create the corresponding 1D cluster state.
-    linear_cluster = gg.Graph(N=N, E=[(i, i + 1) for i in range(N - 1)])
+    linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     # Convert the sequence (tuple) from the strategy into a list.
     list_sequence = list(list(i) for i in strategy.sequence)
     # Change the indices of the original strategy into the new ones. So we have to sum one to each inner neighbor.
@@ -252,11 +252,12 @@ def all_strategies_1d_pair(N):
         List of all possible strategies.
     """
     # Create the linear cluster, where the two end, labelled with 0 and N - 1, are the target qubits.
-    linear_cluster = gg.Graph(N=N, E=[(i, i + 1) for i in range(N - 1)])
+    linear_cluster = nx.Graph([(i, i + 1) for i in range(N - 1)])
     # Generate the initial state.
     state = State(graph=linear_cluster, maps=[])
     # Create the final Bell pair.
-    bell_pair = gg.Graph(N=N, E=[(0, N - 1)])
+    bell_pair = nx.create_empty_copy(linear_cluster)
+    bell_pair.add_edge(0, N - 1)
     # Generate the target state.
     target_state = State(graph=bell_pair, maps=[])
     # Get all patterns.
