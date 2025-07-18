@@ -3,6 +3,7 @@ from random import choices
 from itertools import permutations
 from collections import defaultdict
 import noisy_graph_states.libs.graph as gt
+import noisy_graph_states as ngs
 from noisy_graph_states.tools.patterns import sequence_to_pattern
 from noisy_graph_states.tools.patterns import pattern_to_sequence
 from noisy_graph_states.tools.patterns import pattern_to_all_sequences
@@ -93,3 +94,43 @@ def test_pattern_all_reversible_general():
             for sequence in sequences:
                 output_pattern = sequence_to_pattern(sequence, graph=start_graph)
                 assert input_pattern == output_pattern
+
+
+def test_pattern_custom_b0():
+    """Test that the b0 parameter is correctly applied in the pattern_to_sequence function for a linear graph."""
+    for N in range(2, 10):
+        start_graph = nx.Graph([(i, i + 1) for i in range(N - 1)])
+        input_pattern = ["x" if i % 2 != 0 else "." for i in range(N)]
+        support_nodes = [i for i in range(N - 1) if i % 2 == 0]
+        sequences = pattern_to_sequence(
+            pattern=input_pattern, graph=start_graph, support_nodes=support_nodes
+        )
+        for idx, support_node in enumerate(support_nodes):
+            assert sequences[idx][0] == "x"
+            assert sequences[idx][1] == support_node + 1
+            assert sequences[idx][2] == support_node
+
+
+def test_check_graph_equality_with_states():
+    """Test that the graph equality check works correctly."""
+    for N in range(2, 10):
+        graph1 = nx.Graph([(i, i + 1) for i in range(N - 1)])
+        graph2 = nx.Graph([(i, i + 1) for i in range(N - 1)])
+        pattern = ["x"] * N
+        # State corresponding to graph1
+        state1 = ngs.State(graph=graph1, maps=[])
+        sequence = pattern_to_sequence(pattern, graph1)
+        meas_strategy = ngs.Strategy(sequence=sequence, graph=graph1)
+        output_state1 = meas_strategy(state1)
+        # State corresponding to graph2
+        state2 = ngs.State(graph=graph2, maps=[])
+        sequence = pattern_to_sequence(pattern, graph2)
+        meas_strategy = ngs.Strategy(sequence=sequence, graph=graph2)
+        output_state2 = meas_strategy(state2)
+        assert output_state1.graph == output_state1.graph  # graphs are the same object
+        assert (
+            not output_state1.graph == output_state2.graph
+        )  # graphs are different objects
+        assert gt.check_equality(
+            output_state1.graph, output_state2.graph
+        )  # graphs are equal in structure

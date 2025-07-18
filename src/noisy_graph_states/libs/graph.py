@@ -224,6 +224,25 @@ def neighbourhood(graph, index):
     return tuple(graph[index])
 
 
+def check_equality(graph1, graph2):
+    """Check if two graphs are equal, i.e., they have the same edges, vertices and labels.
+
+    Parameters
+    ----------
+    graph1 : nx.Graph
+        The first graph.
+    graph2 : nx.Graph
+        The second graph.
+
+    Returns
+    -------
+    bool
+        True if the graphs are equal, False otherwise.
+
+    """
+    return nx.utils.graphs_equal(graph1, graph2)
+
+
 def update_graph_cnot(graph, source, target):
     """Returns the graph state after a CNOT between source and target.
 

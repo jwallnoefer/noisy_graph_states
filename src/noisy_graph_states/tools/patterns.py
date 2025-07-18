@@ -80,16 +80,16 @@ def sequence_to_pattern(sequence: list, graph: nx.Graph):
                     b0 = neighbours[0]
                 except IndexError:
                     b0 = None
-                if b0 is not None:
-                    match = matchings[b0]
-                    tmp = match["x"]
-                    match["x"] = match["z"]
-                    match["z"] = tmp
+            if b0 is not None:
+                match = matchings[b0]
+                tmp = match["x"]
+                match["x"] = match["z"]
+                match["z"] = tmp
             graph = gt.measure_x(graph=graph, index=qubit_index, b0=b0)
     return pattern
 
 
-def pattern_to_sequence(pattern: list, graph: nx.Graph):
+def pattern_to_sequence(pattern: list, graph: nx.Graph, support_nodes: list = None):
     """Find a sequence of graph measurements corresponding to a measurement pattern.
 
     Since multiple sequences can lead to the same pattern, this
@@ -111,6 +111,9 @@ def pattern_to_sequence(pattern: list, graph: nx.Graph):
         length must match `len(graph)`
     graph : nx.Graph
         The start graph to which the measurements are applied.
+    support_nodes : list[int] or None
+        A list of indices of support nodes for x measurements.
+        If None, the first neighbour of the qubit is used as support node.
 
     Returns
     -------
@@ -121,11 +124,12 @@ def pattern_to_sequence(pattern: list, graph: nx.Graph):
     assert len(pattern) == len(graph)
     matchings = defaultdict(_default_projector_matching)
     sequence = []
+    b0 = None
+    current_meas = 0
     for qubit_index, proj in enumerate(pattern):
         if proj == ".":
             continue
         effective_instruction = matchings[qubit_index][proj]
-        sequence.append((effective_instruction, qubit_index))
         if effective_instruction == "z":
             # no change in projector matchings required
             graph = gt.measure_z(graph=graph, index=qubit_index)
@@ -140,11 +144,14 @@ def pattern_to_sequence(pattern: list, graph: nx.Graph):
                         match[k] = "x"
             graph = gt.measure_y(graph=graph, index=qubit_index)
         elif effective_instruction == "x":
-            neighbours = gt.neighbourhood(graph=graph, index=qubit_index)
-            try:
-                b0 = neighbours[0]
-            except IndexError:
-                b0 = None
+            if support_nodes is not None:
+                b0 = support_nodes[current_meas]
+            else:
+                try:
+                    neighbours = gt.neighbourhood(graph=graph, index=qubit_index)
+                    b0 = neighbours[0]
+                except IndexError:
+                    b0 = None
             if b0 is not None:
                 match = matchings[b0]
                 for k, v in match.items():
@@ -153,6 +160,8 @@ def pattern_to_sequence(pattern: list, graph: nx.Graph):
                     elif v == "z":
                         match[k] = "x"
             graph = gt.measure_x(graph=graph, index=qubit_index, b0=b0)
+        sequence.append((effective_instruction, qubit_index, b0))
+        current_meas += 1
     return tuple(sequence)
 
 
@@ -199,7 +208,6 @@ def pattern_to_all_sequences(pattern: list, graph: nx.Graph):
             if proj == ".":
                 continue
             effective_instruction = matchings[qubit_index][proj]
-            sequence.append((effective_instruction, qubit_index))
             if effective_instruction == "z":
                 # no change in projector matchings required
                 graph = gt.measure_z(graph=graph, index=qubit_index)
@@ -227,5 +235,6 @@ def pattern_to_all_sequences(pattern: list, graph: nx.Graph):
                         elif v == "z":
                             match[k] = "x"
                 graph = gt.measure_x(graph=graph, index=qubit_index, b0=b0)
+            sequence.append((effective_instruction, qubit_index))
         sequences.append(sequence)
     return sequences

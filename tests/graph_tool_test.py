@@ -30,6 +30,14 @@ def test_neighbourhood():
         assert neighbourhood == target_neighbourhood
 
 
+def test_check_equality():
+    graph1 = nx.Graph([(0, 1), (1, 2)])
+    graph2 = nx.Graph([(0, 1), (1, 2)])
+    graph3 = nx.Graph([(0, 1), (1, 3)])
+    assert gt.check_equality(graph1, graph2)
+    assert not gt.check_equality(graph1, graph3)
+
+
 def test_update_graph_cnot():
     start_graph = nx.Graph([(0, 1), (1, 2), (3, 4)])
     target_graph = nx.Graph([(0, 1), (1, 2), (3, 4), (1, 4)])

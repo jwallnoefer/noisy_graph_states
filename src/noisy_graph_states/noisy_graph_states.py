@@ -208,7 +208,7 @@ class State(object):
         """
         if not isinstance(other, State):
             return NotImplemented
-        return nx.utils.graphs_equal(self.graph, other.graph) and compile_maps(
+        return gt.check_equality(self.graph, other.graph) and compile_maps(
             *self.maps
         ) == compile_maps(*other.maps)
 
@@ -326,7 +326,7 @@ class Strategy(object):
         """
         if not isinstance(other, State):
             raise TypeError("Strategy can only be applied to State objects.")
-        if not other.graph == self.graph:
+        if not gt.check_equality(self.graph, other.graph):
             raise ValueError(
                 f"State Graph {other.graph} is not compatible with Strategy Graph {self.graph}."
             )
